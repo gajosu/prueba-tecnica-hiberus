@@ -243,6 +243,93 @@ $order = OrderMother::withItems(3);
 - Las migraciones de Doctrine se ejecutan automáticamente en el setup
 - El entorno de desarrollo está completamente containerizado
 
+## API REST
+
+La API está disponible en: `http://localhost:8777/api`
+
+### Endpoints Disponibles
+
+- **POST** `/api/login` - Autenticación simulada
+- **GET** `/api/products` - Listar productos (con paginación y búsqueda)
+- **POST** `/api/products` - Crear producto (Admin)
+- **POST** `/api/orders` - Crear pedido
+- **GET** `/api/orders/{id}` - Ver detalle de pedido
+- **POST** `/api/orders/{id}/checkout` - Checkout (pago simulado)
+
+### Documentación Completa
+
+- Ver `docs/API.md` para documentación detallada de cada endpoint
+- Importar `docs/Insomnia_Collection.json` en Postman/Insomnia para probar la API
+
+### Ejemplos Rápidos
+
+```bash
+# Health check
+curl http://localhost:8777/api/health
+
+# Login
+curl -X POST http://localhost:8777/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "customer1@example.com", "password": "password"}'
+
+# Listar productos
+curl "http://localhost:8777/api/products?page=1&limit=5"
+
+# Crear pedido
+curl -X POST http://localhost:8777/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": "customer-001", "items": [{"productId": "product-xxx", "quantity": 1}]}'
+```
+
+### Usuarios de Prueba
+
+Ver detalles completos en `docs/CREDENTIALS.md`
+
+- **Admin**: `admin@example.com` / `password`
+- **Cliente 1**: `customer1@example.com` / `password`
+- **Cliente 2**: `customer2@example.com` / `password`
+
+## Pruebas
+
+El proyecto cuenta con una suite completa de tests:
+
+### Tipos de Pruebas
+
+#### Tests Unitarios
+Prueban la lógica de negocio de forma aislada sin dependencias externas:
+
+```bash
+make test-unit
+```
+
+#### Tests de Infraestructura
+Prueban la integración con la base de datos (repositorios):
+
+```bash
+make test-infrastructure
+```
+
+#### Tests Funcionales (Feature Tests)
+Prueban los endpoints de la API con requests HTTP reales:
+
+```bash
+make test-feature
+```
+
+#### Ejecutar Todas las Pruebas
+
+```bash
+make test
+```
+
+### Base de Datos de Test
+
+Los tests de infraestructura y funcionales utilizan una base de datos separada (`app_test`). Para resetearla:
+
+```bash
+make test-db-reset
+```
+
 ## Solución de Problemas
 
 ### Los contenedores no inician

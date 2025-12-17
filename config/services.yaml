@@ -14,6 +14,24 @@ services:
             - '../src/*/Domain/ValueObject/'
             - '../src/Kernel.php'
 
+    # Controllers are imported separately to make sure services can be injected
+    # as action arguments even if you don't extend any base controller class
+    App\Product\Infrastructure\Controller\:
+        resource: '../src/Product/Infrastructure/Controller/'
+        tags: ['controller.service_arguments']
+
+    App\Order\Infrastructure\Controller\:
+        resource: '../src/Order/Infrastructure/Controller/'
+        tags: ['controller.service_arguments']
+
+    App\Customer\Infrastructure\Controller\:
+        resource: '../src/Customer/Infrastructure/Controller/'
+        tags: ['controller.service_arguments']
+
+    App\Shared\Infrastructure\Controller\:
+        resource: '../src/Shared/Infrastructure/Controller/'
+        tags: ['controller.service_arguments']
+
     # Shared Services
     App\Shared\Domain\Service\UuidGenerator:
         class: App\Shared\Infrastructure\Service\RamseyUuidGenerator
@@ -36,7 +54,12 @@ services:
     App\Order\Application\GetOrderDetail\GetOrderDetailHandler: ~
     App\Order\Application\CheckoutOrder\CheckoutOrderHandler: ~
 
-    App\Customer\Application\SimulatedLogin\SimulatedLoginHandler: ~
+    App\Customer\Application\Login\LoginHandler: ~
+
+    # Security Attribute Listener
+    App\Shared\Infrastructure\Security\EventListener\SecurityAttributeListener:
+        tags:
+            - { name: kernel.event_subscriber }
 
 when@test:
     services:

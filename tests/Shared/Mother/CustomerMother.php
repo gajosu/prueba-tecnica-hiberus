@@ -31,7 +31,7 @@ final class CustomerMother
             $id ?? self::faker()->uuid(),
             $email ?? self::faker()->email(),
             $name ?? self::faker()->name(),
-            $role ?? 'CUSTOMER'
+            $role ?? 'ROLE_USER'
         );
     }
 
@@ -45,7 +45,7 @@ final class CustomerMother
         return self::create(
             email: 'admin-' . uniqid() . '@example.com',
             name: 'Admin User',
-            role: 'ADMIN'
+            role: 'ROLE_ADMIN'
         );
     }
 
@@ -54,7 +54,7 @@ final class CustomerMother
         return self::create(
             email: 'customer-' . uniqid() . '@example.com',
             name: 'Customer User',
-            role: 'CUSTOMER'
+            role: 'ROLE_USER'
         );
     }
 

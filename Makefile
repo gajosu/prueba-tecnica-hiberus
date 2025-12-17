@@ -50,6 +50,9 @@ test-unit: ## Run only unit tests
 test-infrastructure: ## Run only infrastructure tests
 	@docker-compose exec php php bin/phpunit --testsuite=Infrastructure
 
+test-feature: ## Run only feature tests
+	@docker-compose exec php php bin/phpunit --testsuite=Feature
+
 test-coverage: ## Run tests with coverage
 	@docker-compose exec php php bin/phpunit --coverage-html var/coverage
 
@@ -62,10 +65,14 @@ test-db-migrate: ## Run migrations on test database
 test-db-drop: ## Drop test database
 	@docker-compose exec php php bin/console doctrine:database:drop --env=test --force --if-exists
 
-test-db-reset: ## Reset test database (drop, create, migrate)
+test-db-fixtures: ## Load fixtures in test database
+	@docker-compose exec php php bin/console doctrine:fixtures:load --env=test --no-interaction
+
+test-db-reset: ## Reset test database (drop, create, migrate, fixtures)
 	@make test-db-drop
 	@make test-db-create
 	@make test-db-migrate
+	@make test-db-fixtures
 
 clean: ## Clear cache and logs
 	@docker-compose exec php php bin/console cache:clear

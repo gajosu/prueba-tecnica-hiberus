@@ -25,6 +25,9 @@
         <testsuite name="Infrastructure">
             <directory>tests/Infrastructure</directory>
         </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
     </testsuites>
 
     <source ignoreSuppressionOfDeprecations="true"
