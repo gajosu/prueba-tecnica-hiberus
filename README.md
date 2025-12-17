@@ -1,36 +1,29 @@
 # Prueba Técnica Hiberus
 
-Sistema básico de gestión de pedidos y pagos desarrollado con Symfony 7 y React con arquitectura hexagonal.
+E-commerce completo con **Symfony 7** (backend) y **React 18** (frontend), siguiendo **Arquitectura Hexagonal** y **Domain-Driven Design**.
 
-## 📑 Índice de Contenidos
+## 📑 Índice
 
-- [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Comandos Disponibles](#comandos-disponibles)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Acceso a la Aplicación](#acceso-a-la-aplicación)
-- [Desarrollo](#desarrollo)
-- [Pruebas](#pruebas)
-- [API REST](#api-rest)
-- [Autenticación y Seguridad](#autenticación-y-seguridad)
-- [Roles y Permisos](#roles-y-permisos)
-- [Arquitectura](#arquitectura)
-- [Tecnologías Utilizadas](#tecnologías-utilizadas)
-- [Solución de Problemas](#solución-de-problemas)
+- [🚀 Inicio Rápido](#-inicio-rápido)
+- [🏗️ Arquitectura](#️-arquitectura)
+- [💻 Frontend](#-frontend)
+- [🔐 Autenticación y Seguridad](#-autenticación-y-seguridad)
+- [📚 API REST](#-api-rest)
+- [🧪 Testing](#-testing)
+- [⚙️ Comandos y Desarrollo](#️-comandos-y-desarrollo)
+- [🛠️ Solución de Problemas](#️-solución-de-problemas)
 
 ---
 
-## Requisitos
+## 🚀 Inicio Rápido
+
+### Requisitos
 
 - Docker y Docker Compose
 - Composer (opcional, se puede usar dentro del contenedor)
 - Node.js 18+ (opcional, se puede usar dentro del contenedor)
 
-## Instalación
-
-### Opción 1: Setup Automatizado (Recomendado)
-
-Ejecuta el script de setup que instalará todas las dependencias y configurará el entorno:
+### Opción 1: Instalación Automática (Recomendado)
 
 ```bash
 make setup
@@ -43,7 +36,14 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-### Opción 2: Setup Manual
+**Este comando configura:**
+- ✅ Contenedores Docker (PHP 8.2 + PostgreSQL 16)
+- ✅ Dependencias (Composer + NPM)
+- ✅ Base de datos (desarrollo + test) con migraciones y fixtures
+- ✅ Claves JWT para autenticación
+- ✅ Frontend compilado y listo
+
+### Opción 2: Instalación Manual
 
 1. **Levantar contenedores Docker:**
    ```bash
@@ -69,21 +69,28 @@ chmod +x setup.sh
    
    **Nota:** El puerto externo de PostgreSQL es 5433 para evitar conflictos. Internamente en Docker usa el puerto 5432.
 
-4. **Ejecutar migraciones (desarrollo):**
+4. **Generar claves JWT:**
+   ```bash
+   make jwt-keys
+   # o
+   docker-compose exec php php bin/console lexik:jwt:generate-keypair
+   ```
+
+5. **Ejecutar migraciones (desarrollo):**
    ```bash
    make migrate
    # o
    docker-compose exec php php bin/console doctrine:migrations:migrate --no-interaction
    ```
 
-5. **Cargar fixtures (desarrollo):**
+6. **Cargar fixtures (desarrollo):**
    ```bash
    make fixtures
    # o
    docker-compose exec php php bin/console doctrine:fixtures:load --no-interaction
    ```
 
-6. **Configurar base de datos de test:**
+7. **Configurar base de datos de test:**
    ```bash
    # Crear base de datos de test
    docker-compose exec php php bin/console doctrine:database:create --env=test --if-not-exists
@@ -98,558 +105,420 @@ chmod +x setup.sh
    make test-db-reset
    ```
 
-7. **Construir assets del frontend:**
+8. **Construir assets del frontend:**
    ```bash
    make build
    # o
    docker-compose exec php npm run build
    ```
 
-## Comandos Disponibles
+### Acceso a la Aplicación
 
-Usa `make help` para ver todos los comandos disponibles:
-
-### Gestión de Contenedores
-- `make setup` - Ejecutar setup completo (desarrollo + test)
-- `make up` - Levantar contenedores Docker
-- `make down` - Detener contenedores Docker
-- `make restart` - Reiniciar contenedores
-- `make logs` - Ver logs de Docker
-- `make shell` - Abrir shell en contenedor PHP
-- `make db-shell` - Abrir shell de PostgreSQL
-
-### Dependencias
-- `make install` - Instalar dependencias (composer + npm)
-
-### Base de Datos (Desarrollo)
-- `make migrate` - Ejecutar migraciones
-- `make migrate-diff` - Crear nueva migración
-- `make fixtures` - Cargar fixtures
-
-### Base de Datos (Test)
-- `make test-db-create` - Crear base de datos de test
-- `make test-db-migrate` - Ejecutar migraciones en test
-- `make test-db-fixtures` - Cargar fixtures en test
-- `make test-db-drop` - Eliminar base de datos de test
-- `make test-db-reset` - Resetear DB de test (drop + create + migrate + fixtures)
-
-### Tests
-- `make test` - Ejecutar todos los tests
-- `make test-unit` - Ejecutar tests unitarios
-- `make test-infrastructure` - Ejecutar tests de infraestructura
-- `make test-feature` - Ejecutar tests de feature
-- `make test-coverage` - Ejecutar tests con reporte de coverage
-
-### Frontend
-- `make build` - Construir assets con Vite (producción)
-- `make dev` - Iniciar servidor Vite en desarrollo
-
-### Utilidades
-- `make clean` - Limpiar cache y logs
-
-## Estructura del Proyecto
-
-```
-prueba-tecnica-hiberus/
-├── assets/              # React + Vite
-├── config/              # Configuración Symfony
-├── src/                 # Código fuente PHP
-├── public/              # Punto de entrada web
-├── docker/              # Configuración Docker
-├── docker-compose.yml   # Servicios Docker
-├── Makefile            # Comandos automatizados
-└── setup.sh            # Script de setup
-```
-
-## 🚀 Inicio Rápido
-
-Para levantar la aplicación completa (Backend + Frontend + Tests):
-
-```bash
-# 1. Ejecutar setup completo (configura todo automáticamente)
-make setup
-
-# 2. Acceder a la aplicación en http://localhost:8777
-
-# 3. (Opcional) Para desarrollo con Hot Reload, iniciar Vite dev server
-make dev
-# o
-docker-compose exec php npm run dev
-```
-
-**El comando `make setup` configura:**
-- ✅ Contenedores Docker (PHP + PostgreSQL)
-- ✅ Dependencias (Composer + NPM)
-- ✅ Base de datos de desarrollo + migraciones + fixtures
-- ✅ Base de datos de test + migraciones + fixtures
-- ✅ Assets del frontend compilados
-
-**¡Todo listo en un solo comando!** 🎉
-
-## Acceso a la Aplicación
-
-- **Aplicación Web (Frontend + Backend):** http://localhost:8777
-- **Servidor Vite (Desarrollo):** http://localhost:5173 (usado automáticamente por el frontend)
+- **Aplicación Web:** http://localhost:8777
 - **API REST:** http://localhost:8777/api
-- **Documentación API (Swagger UI):** http://localhost:8777/api/doc
+- **API Docs (Swagger):** http://localhost:8777/api/doc
+- **Vite Dev Server:** http://localhost:5173 (HMR para desarrollo)
 - **PostgreSQL:** localhost:5433
 
-### Credenciales de Acceso
+### Credenciales de Prueba
 
-**Usuarios de prueba (cargados con fixtures):**
-- **Admin:** admin@example.com / password
-  - Tiene acceso al panel de administración (`/admin/products`)
-  - Puede crear productos
-- **Usuario 1:** customer1@example.com / password
-  - Usuario estándar con permisos de compra
-- **Usuario 2:** customer2@example.com / password
-  - Usuario estándar con permisos de compra
+| Usuario | Email | Password | Rol |
+|---------|-------|----------|-----|
+| Admin | `admin@example.com` | `password` | Crear productos + acceso completo |
+| Usuario 1 | `customer1@example.com` | `password` | Comprar productos |
+| Usuario 2 | `customer2@example.com` | `password` | Comprar productos |
 
-**PostgreSQL:**
-- Usuario: `app`
-- Contraseña: `app`
-- Base de datos (dev): `app`
-- Base de datos (test): `app_test`
-- Puerto externo: `5433`
-- Puerto interno (Docker): `5432`
+---
 
-## Desarrollo
+## 🏗️ Arquitectura
 
-### Backend (Symfony)
+### Diseño Hexagonal (Ports & Adapters) + DDD
 
-Para ejecutar comandos de Symfony:
-
-```bash
-# Desde la raíz del proyecto
-php bin/console [comando]
-
-# O desde el contenedor
-docker-compose exec php php bin/console [comando]
-```
-
-### Frontend (React + Vite)
-
-El frontend está en `assets/` y usa **React 18**, **React Router**, **TailwindCSS** y **shadcn/ui**.
-
-#### Desarrollo
-
-Para trabajar con Hot Module Replacement (HMR), necesitas tener **dos terminales**:
-
-**Terminal 1 - Backend (Symfony):**
-```bash
-make up  # Los contenedores ya están corriendo
-```
-
-**Terminal 2 - Frontend (Vite):**
-```bash
-make dev
-# o
-docker-compose exec php npm run dev
-```
-
-Esto iniciará el servidor de desarrollo de Vite en http://localhost:5173
-
-⚠️ **Importante:** En desarrollo, debes tener el servidor de Vite corriendo para que el HMR funcione. Si no lo tienes corriendo, los assets se servirán desde `public/build/` (versión de producción).
-
-Luego accede a **http://localhost:8777** (no al puerto 5173, ese es solo para Vite internamente)
-
-#### Producción
-
-Para construir los assets para producción:
-
-```bash
-make build
-# o
-npm run build
-```
-
-Los archivos construidos se generan en `public/build/`
-
-#### Estructura del Frontend
-
-```
-assets/
-├── components/
-│   ├── ui/              # Componentes shadcn/ui (Button, Card, Input, etc.)
-│   ├── Layout.jsx       # Layout principal con navegación
-│   └── ProtectedRoute.jsx  # Protección de rutas autenticadas
-├── context/
-│   ├── AuthContext.jsx  # Context para autenticación JWT
-│   └── CartContext.jsx  # Context para carrito de compras
-├── pages/
-│   ├── LoginPage.jsx    # Página de inicio de sesión
-│   ├── CatalogPage.jsx  # Catálogo de productos con búsqueda y paginación
-│   ├── CartPage.jsx     # Carrito de compras
-│   └── OrderDetailPage.jsx  # Detalle de pedido con checkout
-├── lib/
-│   ├── api.js          # Cliente API con axios
-│   └── utils.js        # Utilidades (cn para clsx + tailwind-merge)
-├── styles/
-│   └── app.css         # Estilos globales con TailwindCSS
-└── app.jsx             # Punto de entrada con React Router
-```
-
-#### Características del Frontend
-
-- **Autenticación JWT**: Login con email y contraseña, token almacenado en localStorage
-- **Gestión de estado**: Contexts de React para Auth y Cart
-- **Rutas protegidas**: Solo usuarios autenticados pueden acceder al catálogo y carrito
-- **Carrito persistente**: El carrito se guarda en localStorage
-- **UI moderna**: Componentes de shadcn/ui con TailwindCSS
-- **Responsive**: Diseño adaptable a diferentes dispositivos
-
-## Pruebas
-
-El proyecto cuenta con una suite completa de tests dividida en:
-- **Unit Tests**: Tests unitarios sin dependencias externas
-- **Infrastructure Tests**: Tests de integración con base de datos
-- **Feature Tests**: Tests end-to-end de la API
-
-### Configurar Base de Datos de Test
-
-**Si ejecutaste `make setup`, la base de datos de test ya está configurada.**
-
-Para configurarla manualmente o resetearla:
-
-```bash
-# Opción 1: Resetear todo (recomendado)
-make test-db-reset
-
-# Opción 2: Paso a paso
-make test-db-create      # Crear base de datos
-make test-db-migrate     # Ejecutar migraciones
-make test-db-fixtures    # Cargar fixtures
-
-# Opción 3: Solo eliminar y recrear
-make test-db-drop        # Eliminar base de datos
-make test-db-create      # Crear de nuevo
-```
-
-### Ejecutar Tests
-
-```bash
-# Ejecutar todos los tests
-make test
-
-# Ejecutar solo tests unitarios (rápidos, sin BD)
-make test-unit
-
-# Ejecutar solo tests de infraestructura (con BD)
-make test-infrastructure
-
-# Ejecutar con coverage
-make test-coverage
-```
-
-### Estructura de Tests
-
-```
-tests/
-├── Shared/
-│   ├── UnitTestCase.php           # Clase base para tests unitarios
-│   ├── InfrastructureTestCase.php # Clase base para tests con BD
-│   └── Mother/                     # Object Mothers (datos fake)
-│       ├── ProductMother.php
-│       ├── OrderMother.php
-│       ├── CustomerMother.php
-│       └── ...
-├── Unit/                           # Tests unitarios
-│   ├── Product/
-│   ├── Order/
-│   └── Customer/
-└── Infrastructure/                 # Tests de integración
-    ├── Product/
-    ├── Order/
-    └── Customer/
-```
-
-### Object Mothers
-
-El proyecto usa Object Mothers para generar datos de test:
-
-```php
-// Crear un producto aleatorio
-$product = ProductMother::random();
-
-// Crear un producto con datos específicos
-$product = ProductMother::create(
-    name: 'Laptop',
-    stock: 10
-);
-
-// Usar métodos helper
-$product = ProductMother::withoutStock();
-$customer = CustomerMother::admin();
-$order = OrderMother::withItems(3);
-```
-
-## Tecnologías Utilizadas
-
-- **Backend:**
-  - Symfony 7
-  - PHP 8.2+
-  - Doctrine ORM
-  - PostgreSQL 16
-
-- **Frontend:**
-  - React 18
-  - React Router 6
-  - Vite 5
-  - TailwindCSS 3.4
-  - shadcn/ui (componentes UI)
-  - Axios (cliente HTTP)
-  - Lucide React (iconos)
-  - TypeScript (opcional)
-
-- **Infraestructura:**
-  - Docker & Docker Compose
-  - PHP-CLI
-  - PostgreSQL 16
-
-## Notas
-
-- El proyecto usa un monorepo donde Symfony y React están integrados
-- Vite está configurado para servir los assets de React
-- Las migraciones de Doctrine se ejecutan automáticamente en el setup
-- El entorno de desarrollo está completamente containerizado
-
-## API REST
-
-La API está disponible en: `http://localhost:8777/api`
-
-### 📚 Documentación OpenAPI (Swagger)
-
-**Accede a la documentación interactiva de la API:**
-
-👉 **http://localhost:8777/api/doc**
-
-La documentación incluye:
-- ✅ Especificación completa de todos los endpoints
-- ✅ Schemas de request y response bodies
-- ✅ Autenticación JWT integrada
-- ✅ Probador interactivo (try it out)
-- ✅ Ejemplos de requests y responses
-
-También puedes obtener el JSON de OpenAPI en: **http://localhost:8777/api/doc/openapi**
-
-### Endpoints Disponibles
-
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| **POST** | `/api/login` | Autenticación de usuario | No |
-| **GET** | `/api/products` | Listar productos (paginado) | No |
-| **POST** | `/api/products` | Crear producto | Admin |
-| **POST** | `/api/orders` | Crear pedido | User |
-| **GET** | `/api/orders/{id}` | Ver detalle de pedido | User |
-| **POST** | `/api/orders/{id}/checkout` | Procesar pago (simulado) | User |
-
-### Ejemplos Rápidos
-
-```bash
-# Health check
-curl http://localhost:8777/api/health
-
-# Login
-curl -X POST http://localhost:8777/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "customer1@example.com", "password": "password"}'
-
-# Listar productos
-curl "http://localhost:8777/api/products?page=1&limit=5"
-
-# Crear pedido
-curl -X POST http://localhost:8777/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{"customerId": "customer-001", "items": [{"productId": "product-xxx", "quantity": 1}]}'
-```
-
-### Usuarios de Prueba
-
-Ver detalles completos en `docs/CREDENTIALS.md`
-
-- **Admin**: `admin@example.com` / `password`
-- **Cliente 1**: `customer1@example.com` / `password`
-- **Cliente 2**: `customer2@example.com` / `password`
-
-## Pruebas
-
-El proyecto cuenta con una suite completa de tests:
-
-### Tipos de Pruebas
-
-#### Tests Unitarios
-Prueban la lógica de negocio de forma aislada sin dependencias externas:
-
-```bash
-make test-unit
-```
-
-#### Tests de Infraestructura
-Prueban la integración con la base de datos (repositorios):
-
-```bash
-make test-infrastructure
-```
-
-#### Tests Funcionales (Feature Tests)
-Prueban los endpoints de la API con requests HTTP reales:
-
-```bash
-make test-feature
-```
-
-#### Ejecutar Todas las Pruebas
-
-```bash
-make test
-```
-
-### Base de Datos de Test
-
-Los tests de infraestructura y funcionales utilizan una base de datos separada (`app_test`). Para resetearla:
-
-```bash
-make test-db-reset
-```
-
-### Cobertura de Tests
-
-El proyecto incluye **71 tests con 794 assertions** que cubren:
-- **Tests Unitarios**: Lógica de negocio (Handlers, Commands, Queries)
-- **Tests de Infraestructura**: Repositorios y persistencia con Doctrine
-- **Tests Funcionales**: Endpoints de la API con requests HTTP reales
-
-Todas las pruebas utilizan **Object Mothers** con FakerPHP para generar datos de prueba consistentes.
-
-## Autenticación y Seguridad
-
-### 🔐 JWT (JSON Web Tokens)
-
-El sistema utiliza **JWT real** (no simulado) con `lexik/jwt-authentication-bundle`:
-
-**Flujo de autenticación:**
-1. Usuario hace login con email/password en `/api/login`
-2. Sistema valida credenciales y genera un JWT token
-3. Cliente incluye el token en el header: `Authorization: Bearer {token}`
-4. Sistema valida el token en cada request protegido
-
-**Configuración:**
-- Claves RSA en `config/jwt/`
-- Tiempo de vida del token: 1 hora (configurable)
-- Password hashing con `bcrypt`
-
-### 🛡️ Guards y Middleware
-
-Similar a los guards/middleware de Laravel, implementamos:
-
-**Guards personalizados:**
-- `AuthGuard`: Verifica que el usuario esté autenticado
-- `AdminGuard`: Verifica que el usuario tenga rol de administrador
-
-**Atributos PHP 8:**
-```php
-#[RequiresAuth]  // Requiere autenticación
-#[RequiresRole('ROLE_ADMIN')]  // Requiere rol específico
-```
-
-**Event Listener:**
-`SecurityAttributeListener` intercepta requests y valida los atributos de seguridad antes de ejecutar los controladores.
-
-**Servicio CurrentUser:**
-```php
-$this->currentUser->id();      // ID del usuario autenticado
-$this->currentUser->email();   // Email
-$this->currentUser->isAdmin(); // Verificar si es admin
-```
-
-## Roles y Permisos
-
-### 📊 Jerarquía de Roles
-
-El sistema tiene **solo 2 roles** con herencia automática:
-
-```
-ROLE_ADMIN (Administrador)
-    │
-    └─> hereda ──> ROLE_USER (Usuario normal)
-```
-
-**Configuración en** `config/packages/security.yaml`:
-```yaml
-role_hierarchy:
-    ROLE_ADMIN: ROLE_USER
-```
-
-### 🎯 Permisos por Rol
-
-| Rol | Permisos |
-|-----|----------|
-| `ROLE_ADMIN` | ✅ Todos los endpoints (crear productos + endpoints de usuario) |
-| `ROLE_USER` | ✅ Solo endpoints de usuario (crear/ver pedidos) |
-
-### 👤 Usuarios de Prueba
-
-| Email | Password | Rol |
-|-------|----------|-----|
-| `admin@example.com` | `password` | `ROLE_ADMIN` |
-| `customer1@example.com` | `password` | `ROLE_USER` |
-| `customer2@example.com` | `password` | `ROLE_USER` |
-
-## Arquitectura
-
-### 🏗️ Diseño Hexagonal (Ports & Adapters)
-
-El proyecto sigue una arquitectura hexagonal con vertical slicing por bounded context:
+El proyecto sigue **Arquitectura Hexagonal** con **vertical slicing por bounded context**:
 
 ```
 src/
 ├── Product/              # Bounded Context: Productos
-│   ├── Application/      # Casos de uso (Commands, Queries, Handlers)
-│   ├── Domain/          # Lógica de negocio (Entities, Value Objects)
-│   └── Infrastructure/  # Adaptadores (Controllers, Repositories, DTOs)
+│   ├── Application/      # 📋 Use Cases (Commands, Queries, Handlers)
+│   │   ├── CreateProduct/
+│   │   └── ListProducts/
+│   ├── Domain/          # 💎 Business Logic (Entities, Value Objects)
+│   │   ├── Entity/Product.php
+│   │   ├── Repository/ProductRepository.php (interface)
+│   │   └── Exception/
+│   └── Infrastructure/  # 🔌 Adapters (HTTP, DB, DTOs)
+│       ├── Controller/
+│       ├── Persistence/DoctrineProductRepository.php
+│       └── Http/        # DTOs de request/response
+│
 ├── Order/               # Bounded Context: Pedidos
-├── Customer/            # Bounded Context: Clientes
-└── Shared/              # Código compartido entre contextos
+│   ├── Application/     # CreateOrder, CheckoutOrder, GetOrderDetail
+│   ├── Domain/         # Order entity, OrderItem, OrderStatus VO
+│   └── Infrastructure/ # Controllers, Doctrine repositories
+│
+├── Customer/            # Bounded Context: Clientes/Auth
+│   ├── Application/     # Login, Register
+│   ├── Domain/         # Customer entity (UserInterface)
+│   └── Infrastructure/ # LoginController, DoctrineCustomerRepository
+│
+└── Shared/              # Código compartido
+    ├── Domain/         # UuidGenerator, Money VO
+    └── Infrastructure/ # Security (JWT, Guards), Exception handling
 ```
 
-### 🎯 Principios Aplicados
+### Principios Aplicados
 
-- **DDD (Domain-Driven Design)**: Bounded Contexts, Entities, Value Objects
-- **CQRS**: Separación de Commands y Queries
-- **Repository Pattern**: Interfaces para abstracción de persistencia
-- **Dependency Inversion**: Dependencias apuntan hacia el dominio
-- **SOLID Principles**: Código mantenible y testeable
+- ✅ **DDD**: Bounded Contexts, Entities, Value Objects (`Money`, `OrderStatus`)
+- ✅ **CQRS**: Separación Commands/Queries con Handlers
+- ✅ **Repository Pattern**: Interfaces en Domain, implementaciones en Infrastructure
+- ✅ **Dependency Inversion**: Domain no depende de Infrastructure
+- ✅ **SOLID**: Single Responsibility, Open/Closed, Dependency Inversion
+- ✅ **Inmutabilidad**: Value Objects inmutables, DTOs readonly
 
-### 📦 Value Objects
+### Flujo de una Request
 
-- `Money`: Encapsula precio y moneda
-- `OrderStatus`: Estados del pedido (pending, paid, cancelled)
-- Custom UUID generation service desacoplado
+```
+HTTP Request
+    ↓
+Controller (Infrastructure)
+    ↓
+DTO Validation
+    ↓
+Command/Query Creation
+    ↓
+Handler (Application) ← usa → Repository Interface (Domain)
+    ↓                              ↓
+Domain Logic              Repository Impl (Infrastructure)
+    ↓                              ↓
+Response DTO              Doctrine/PostgreSQL
+    ↓
+JSON Response
+```
 
-## Solución de Problemas
+### Gestión de Stock
 
-### Los contenedores no inician
+**Validación en Checkout (no en creación):**
+1. Usuario crea orden → Se guarda sin validar stock
+2. Usuario hace checkout → Se valida stock disponible
+3. Si hay stock → Se procesa pago y se reduce stock
+4. Si no hay stock → Error `400 Bad Request` con mensaje claro
+
+Esto permite:
+- Carritos que no bloquean stock
+- Validación en tiempo real al pagar
+- Mejor UX (mensaje claro de error)
+
+---
+
+## 💻 Frontend
+
+### Stack Tecnológico
+
+- **React 18** con Hooks modernos
+- **React Router 6** para navegación SPA
+- **Vite 5** para build y HMR ultrarrápido
+- **TailwindCSS 3.4** para estilos utility-first
+- **shadcn/ui** componentes accesibles y personalizables
+- **Axios** cliente HTTP con interceptors
+- **Lucide React** iconos modernos
+
+### Estructura
+
+```
+assets/
+├── app.jsx              # 🚪 Entry point con React Router
+├── components/
+│   ├── ui/              # 🎨 shadcn/ui (Button, Card, Input, Badge...)
+│   ├── Layout.jsx       # 📐 Layout con header sticky y navegación
+│   ├── ProtectedRoute.jsx  # 🔒 Guard para rutas autenticadas
+│   └── AdminRoute.jsx   # 🛡️ Guard para rutas de admin
+├── context/
+│   ├── AuthContext.jsx  # 🔐 Estado global de autenticación (JWT)
+│   └── CartContext.jsx  # 🛒 Estado global del carrito (localStorage)
+├── pages/
+│   ├── LoginPage.jsx    # 🔑 Login con validación
+│   ├── CatalogPage.jsx  # 📦 Catálogo con búsqueda, filtros y paginación
+│   ├── CartPage.jsx     # 🛍️ Carrito con ajuste de cantidades
+│   ├── OrderDetailPage.jsx  # 💳 Detalle de orden + checkout
+│   └── AdminProductsPage.jsx  # ⚙️ Panel admin para crear productos
+├── lib/
+│   ├── api.js          # 🌐 Cliente Axios con interceptors JWT
+│   └── utils.js        # 🔧 Helpers (cn para Tailwind)
+└── styles/
+    └── app.css         # 🎨 Tailwind + estilos globales
+```
+
+### Características Clave
+
+#### 🔐 Autenticación
+- JWT real con refresh automático
+- Token en `localStorage` + Context API
+- Rutas protegidas con `<ProtectedRoute>` y `<AdminRoute>`
+- Auto-redirect al login si no autenticado
+
+#### 🛒 Carrito
+- Persistencia en `localStorage`
+- Context global accesible desde toda la app
+- Actualización reactiva de cantidades
+- Badge con contador en header
+
+#### 🎨 UI/UX
+- **Diseño responsive** (mobile-first)
+- **Header sticky** con animaciones suaves
+- **Feedback visual** en botones (pulse, scale)
+- **Manejo de errores** con mensajes claros
+- **Loading states** en todas las acciones
+- **Imágenes con fallback** en productos
+
+#### ⚡ Performance
+- **Code splitting** automático con Vite
+- **Lazy loading** de imágenes
+- **HMR (Hot Module Replacement)** en desarrollo
+- **Tree shaking** en producción
+
+### Desarrollo
+
+**Modo Desarrollo (HMR):**
+```bash
+make dev  # Terminal separada para Vite
+```
+Acceder a http://localhost:8777 (Vite se conecta automáticamente)
+
+**Modo Producción:**
+```bash
+make build  # Compila assets optimizados en public/build/
+```
+
+---
+
+## 🔐 Autenticación y Seguridad
+
+### JWT Real (lexik/jwt-authentication-bundle)
+
+**Flujo:**
+1. Login en `/api/login` con email/password
+2. Backend valida con bcrypt y genera JWT firmado con RS256
+3. Cliente guarda token y lo envía en header: `Authorization: Bearer {token}`
+4. Backend valida firma y expira en cada request
+
+**Configuración:**
+- Claves RSA en `config/jwt/` (generadas automáticamente)
+- Expiración: 1 hora (configurable en `.env`)
+- Algoritmo: RS256 (asimétrico)
+
+### Guards Personalizados
+
+**Atributos PHP 8:**
+```php
+#[RequiresAuth]                     // Requiere estar autenticado
+#[RequiresRole('ROLE_ADMIN')]       // Requiere rol específico
+```
+
+**Listener:**
+`SecurityAttributeListener` intercepta requests antes del controlador y valida permisos.
+
+**Servicio CurrentUser:**
+```php
+$this->currentUser->id();       // ID del usuario JWT
+$this->currentUser->email();    // Email
+$this->currentUser->isAdmin();  // Verificar rol
+```
+
+### Jerarquía de Roles
+
+```
+ROLE_ADMIN  →  ROLE_USER
+     ↓             ↓
+  Crear       Comprar
+ productos    productos
+```
+
+**Configurado en** `security.yaml`:
+```yaml
+role_hierarchy:
+    ROLE_ADMIN: ROLE_USER  # Admin hereda permisos de User
+```
+
+---
+
+## 📚 API REST
+
+### Documentación Interactiva
+
+👉 **http://localhost:8777/api/doc** (Swagger UI)
+
+- ✅ Probador integrado (Try it out)
+- ✅ Schemas detallados de requests/responses
+- ✅ Autenticación JWT desde la UI
+- ✅ Especificación OpenAPI 3.0
+
+### Endpoints Principales
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/login` | Autenticación | No |
+| `GET` | `/api/products` | Listar productos (paginado + búsqueda) | No |
+| `POST` | `/api/products` | Crear producto | Admin |
+| `POST` | `/api/orders` | Crear orden (carrito) | User |
+| `GET` | `/api/orders/{id}` | Ver detalle de orden | User (owner) |
+| `POST` | `/api/orders/{id}/checkout` | Procesar pago | User (owner) |
+
+
+### Manejo de Errores
+
+El sistema devuelve errores estructurados:
+
+**Stock insuficiente (400):**
+```json
+{
+  "error": "Insufficient stock for Product X. Available: 1, Required: 5",
+  "type": "insufficient_stock"
+}
+```
+
+**Validación (422):**
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": ["Email is required"]
+  }
+}
+```
+
+---
+
+## 🧪 Testing
+
+### Cobertura
+
+**73 tests** con **408 assertions** divididos en:
+
+- ✅ **Unit Tests** (Application layer) - Lógica de negocio aislada
+- ✅ **Infrastructure Tests** (Persistence) - Repositorios con BD real
+- ✅ **Feature Tests** (HTTP) - Endpoints completos end-to-end
+
+### Ejecutar Tests
 
 ```bash
-docker-compose down
-docker-compose up -d
+make test              # Todos los tests
+make test-unit         # Solo unitarios (rápidos)
+make test-infrastructure  # Con base de datos
+make test-feature      # API endpoints
 ```
 
-### Error de permisos
+### Object Mothers
+
+Generación de datos de test con Faker:
+
+```php
+$product = ProductMother::random();
+$product = ProductMother::withStock(50);
+$customer = CustomerMother::admin();
+$order = OrderMother::withItems(3);
+```
+
+### Base de Datos de Test
 
 ```bash
-chmod -R 777 var/
+make test-db-reset  # Resetear BD test (drop+create+migrate+fixtures)
 ```
 
-### Limpiar todo y empezar de nuevo
+---
+
+## ⚙️ Comandos y Desarrollo
+
+### Comandos Principales
 
 ```bash
-make reset
+# Setup inicial
+make setup           # Todo en uno (¡recomendado!)
+
+# Contenedores
+make up              # Levantar Docker
+make down            # Detener Docker
+make logs            # Ver logs
+make shell           # Shell en contenedor PHP
+
+# Base de datos
+make migrate         # Ejecutar migraciones
+make fixtures        # Cargar fixtures
+make test-db-reset   # Resetear BD test
+
+# Frontend
+make build           # Build producción
+make dev             # Dev server con HMR
+
+# Tests
+make test            # Todos los tests
+make test-unit       # Solo unitarios
 ```
 
-Esto detendrá los contenedores, eliminará los volúmenes, limpiará el cache y reinstalará todo.
+Usa `make help` para ver todos los comandos.
 
-## Licencia
 
-Este proyecto es parte de una prueba técnica.
+---
+
+## 🛠️ Solución de Problemas
+
+### Contenedores no inician
+```bash
+docker-compose down && docker-compose up -d
+```
+
+### Error 500 al login (claves JWT faltantes)
+```bash
+make jwt-keys  # Genera las claves RSA
+docker-compose restart
+```
+
+### Frontend no se actualiza en dev
+```bash
+make dev  # Asegurar que Vite está corriendo
+```
+
+### Tests fallan
+```bash
+make test-db-reset  # Resetear BD de test
+```
+
+### Reset completo
+```bash
+make down
+docker volume prune -f
+make setup
+```
+
+### Ver logs detallados
+```bash
+make logs
+# o
+docker-compose logs -f php
+```
+
+---
+
+## 🚀 Stack Completo
+
+**Backend:**
+- Symfony 7 + PHP 8.2
+- PostgreSQL 16
+- Doctrine ORM
+- JWT (lexik/jwt-authentication-bundle)
+- NelmioApiDoc (OpenAPI/Swagger)
+
+**Frontend:**
+- React 18 + React Router 6
+- Vite 5
+- TailwindCSS 3.4 + shadcn/ui
+- Axios + Lucide Icons
+
+**Infrastructure:**
+- Docker + Docker Compose
+- Make (automatización)
+- PHPUnit (testing)
+
+---
+
+**Licencia:** Prueba técnica - Uso educativo
 
