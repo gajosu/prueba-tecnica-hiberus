@@ -112,13 +112,39 @@ prueba-tecnica-hiberus/
 └── setup.sh            # Script de setup
 ```
 
+## 🚀 Inicio Rápido
+
+Para levantar la aplicación completa (Backend + Frontend):
+
+```bash
+# 1. Levantar contenedores y configurar BD
+make setup
+
+# 2. En una terminal, el backend ya está corriendo en el puerto 8777
+# 3. En otra terminal, iniciar el servidor de desarrollo de Vite
+make dev
+# o
+npm run dev
+```
+
+Luego accede a **http://localhost:8777** en tu navegador.
+
 ## Acceso a la Aplicación
 
-- **Aplicación Symfony:** http://localhost:8000
+- **Aplicación Web (Frontend + Backend):** http://localhost:8777
+- **Servidor Vite (Desarrollo):** http://localhost:5173 (usado automáticamente por el frontend)
+- **API REST:** http://localhost:8777/api
+- **Documentación API (Swagger UI):** http://localhost:8777/api/doc
 - **PostgreSQL:** localhost:5433
 
-### Credenciales PostgreSQL
+### Credenciales de Acceso
 
+**Usuarios de prueba:**
+- **Admin:** admin@example.com / password
+- **Usuario:** customer1@example.com / password
+- **Usuario:** customer2@example.com / password
+
+**PostgreSQL:**
 - Usuario: `app`
 - Contraseña: `app`
 - Base de datos: `app`
@@ -139,23 +165,74 @@ docker-compose exec php php bin/console [comando]
 
 ### Frontend (React + Vite)
 
-El frontend está en `assets/`. Para desarrollo:
+El frontend está en `assets/` y usa **React 18**, **React Router**, **TailwindCSS** y **shadcn/ui**.
 
+#### Desarrollo
+
+Para trabajar con Hot Module Replacement (HMR), necesitas tener **dos terminales**:
+
+**Terminal 1 - Backend (Symfony):**
+```bash
+make up  # Los contenedores ya están corriendo
+```
+
+**Terminal 2 - Frontend (Vite):**
 ```bash
 make dev
 # o
-npm run dev
+docker-compose exec php npm run dev
 ```
 
 Esto iniciará el servidor de desarrollo de Vite en http://localhost:5173
 
-Para producción:
+⚠️ **Importante:** En desarrollo, debes tener el servidor de Vite corriendo para que el HMR funcione. Si no lo tienes corriendo, los assets se servirán desde `public/build/` (versión de producción).
+
+Luego accede a **http://localhost:8777** (no al puerto 5173, ese es solo para Vite internamente)
+
+#### Producción
+
+Para construir los assets para producción:
 
 ```bash
 make build
 # o
 npm run build
 ```
+
+Los archivos construidos se generan en `public/build/`
+
+#### Estructura del Frontend
+
+```
+assets/
+├── components/
+│   ├── ui/              # Componentes shadcn/ui (Button, Card, Input, etc.)
+│   ├── Layout.jsx       # Layout principal con navegación
+│   └── ProtectedRoute.jsx  # Protección de rutas autenticadas
+├── context/
+│   ├── AuthContext.jsx  # Context para autenticación JWT
+│   └── CartContext.jsx  # Context para carrito de compras
+├── pages/
+│   ├── LoginPage.jsx    # Página de inicio de sesión
+│   ├── CatalogPage.jsx  # Catálogo de productos con búsqueda y paginación
+│   ├── CartPage.jsx     # Carrito de compras
+│   └── OrderDetailPage.jsx  # Detalle de pedido con checkout
+├── lib/
+│   ├── api.js          # Cliente API con axios
+│   └── utils.js        # Utilidades (cn para clsx + tailwind-merge)
+├── styles/
+│   └── app.css         # Estilos globales con TailwindCSS
+└── app.jsx             # Punto de entrada con React Router
+```
+
+#### Características del Frontend
+
+- **Autenticación JWT**: Login con email y contraseña, token almacenado en localStorage
+- **Gestión de estado**: Contexts de React para Auth y Cart
+- **Rutas protegidas**: Solo usuarios autenticados pueden acceder al catálogo y carrito
+- **Carrito persistente**: El carrito se guarda en localStorage
+- **UI moderna**: Componentes de shadcn/ui con TailwindCSS
+- **Responsive**: Diseño adaptable a diferentes dispositivos
 
 ## Pruebas
 
@@ -246,7 +323,12 @@ $order = OrderMother::withItems(3);
 
 - **Frontend:**
   - React 18
+  - React Router 6
   - Vite 5
+  - TailwindCSS 3.4
+  - shadcn/ui (componentes UI)
+  - Axios (cliente HTTP)
+  - Lucide React (iconos)
   - TypeScript (opcional)
 
 - **Infraestructura:**
