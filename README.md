@@ -345,7 +345,8 @@ role_hierarchy:
 
 ### Documentación Interactiva
 
-👉 **http://localhost:8777/api/doc** (Swagger UI)
+👉 **http://localhost:8777/api/doc** (Swagger UI)  
+👉 **http://localhost:8777/api/openapi** (Especificación OpenAPI JSON)
 
 - ✅ Probador integrado (Try it out)
 - ✅ Schemas detallados de requests/responses
