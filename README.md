@@ -141,12 +141,81 @@ npm run build
 
 ## Pruebas
 
-Ejecutar pruebas unitarias:
+El proyecto cuenta con una suite completa de tests dividida en:
+- **Unit Tests**: Tests unitarios sin dependencias externas
+- **Infrastructure Tests**: Tests de integración con base de datos
+
+### Configurar Base de Datos de Test
+
+Antes de ejecutar tests de infraestructura, crear la BD de test:
 
 ```bash
+# Crear base de datos de test
+make test-db-create
+
+# Ejecutar migraciones en test
+make test-db-migrate
+
+# O resetear completamente (drop + create + migrate)
+make test-db-reset
+```
+
+### Ejecutar Tests
+
+```bash
+# Ejecutar todos los tests
 make test
-# o
-php bin/phpunit
+
+# Ejecutar solo tests unitarios (rápidos, sin BD)
+make test-unit
+
+# Ejecutar solo tests de infraestructura (con BD)
+make test-infrastructure
+
+# Ejecutar con coverage
+make test-coverage
+```
+
+### Estructura de Tests
+
+```
+tests/
+├── Shared/
+│   ├── UnitTestCase.php           # Clase base para tests unitarios
+│   ├── InfrastructureTestCase.php # Clase base para tests con BD
+│   └── Mother/                     # Object Mothers (datos fake)
+│       ├── ProductMother.php
+│       ├── OrderMother.php
+│       ├── CustomerMother.php
+│       └── ...
+├── Unit/                           # Tests unitarios
+│   ├── Product/
+│   ├── Order/
+│   └── Customer/
+└── Infrastructure/                 # Tests de integración
+    ├── Product/
+    ├── Order/
+    └── Customer/
+```
+
+### Object Mothers
+
+El proyecto usa Object Mothers para generar datos de test:
+
+```php
+// Crear un producto aleatorio
+$product = ProductMother::random();
+
+// Crear un producto con datos específicos
+$product = ProductMother::create(
+    name: 'Laptop',
+    stock: 10
+);
+
+// Usar métodos helper
+$product = ProductMother::withoutStock();
+$customer = CustomerMother::admin();
+$order = OrderMother::withItems(3);
 ```
 
 ## Tecnologías Utilizadas

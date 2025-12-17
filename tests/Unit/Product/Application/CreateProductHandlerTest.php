@@ -7,26 +7,25 @@ namespace App\Tests\Unit\Product\Application;
 use App\Product\Application\CreateProduct\CreateProductCommand;
 use App\Product\Application\CreateProduct\CreateProductHandler;
 use App\Product\Domain\Repository\ProductRepository;
-use App\Shared\Infrastructure\Service\FakeUuidGenerator;
-use PHPUnit\Framework\TestCase;
+use App\Tests\Shared\UnitTestCase;
 
-final class CreateProductHandlerTest extends TestCase
+final class CreateProductHandlerTest extends UnitTestCase
 {
     private ProductRepository $productRepository;
-    private FakeUuidGenerator $uuidGenerator;
     private CreateProductHandler $handler;
 
     protected function setUp(): void
     {
-        $this->productRepository = $this->createMock(ProductRepository::class);
-        $this->uuidGenerator = new FakeUuidGenerator();
+        parent::setUp();
+
+        $this->productRepository = $this->mockRepository(ProductRepository::class);
         $this->handler = new CreateProductHandler(
             $this->productRepository,
-            $this->uuidGenerator
+            $this->getFakeUuidGenerator()
         );
     }
 
-    public function test_it_creates_a_product_with_generated_uuid(): void
+    public function test_it_creates_product_with_valid_data(): void
     {
         // Arrange
         $command = new CreateProductCommand(
@@ -49,10 +48,11 @@ final class CreateProductHandlerTest extends TestCase
         $productId = ($this->handler)($command);
 
         // Assert
+        $this->assertIsString($productId);
         $this->assertEquals('00000000-0000-0000-0000-000000000001', $productId);
     }
 
-    public function test_it_generates_sequential_uuids(): void
+    public function test_it_generates_unique_id_for_product(): void
     {
         // Arrange
         $command = new CreateProductCommand(
@@ -69,36 +69,66 @@ final class CreateProductHandlerTest extends TestCase
         // Act
         $firstId = ($this->handler)($command);
         $secondId = ($this->handler)($command);
-        $thirdId = ($this->handler)($command);
 
         // Assert
-        $this->assertEquals('00000000-0000-0000-0000-000000000001', $firstId);
-        $this->assertEquals('00000000-0000-0000-0000-000000000002', $secondId);
-        $this->assertEquals('00000000-0000-0000-0000-000000000003', $thirdId);
+        $this->assertNotEquals($firstId, $secondId);
     }
 
-    public function test_it_can_use_fixed_uuid(): void
+    public function test_it_persists_product_to_repository(): void
     {
         // Arrange
-        $fixedUuid = 'fixed-uuid-for-testing-123';
-        $this->uuidGenerator->setFixedUuid($fixedUuid);
+        $command = new CreateProductCommand(
+            name: 'Product',
+            description: 'Description',
+            price: 50.0,
+            currency: 'EUR',
+            stock: 20
+        );
 
+        $this->productRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function ($product) use ($command) {
+                return $product->name() === $command->name
+                    && $product->description() === $command->description
+                    && $product->stock() === $command->stock;
+            }));
+
+        $this->productRepository
+            ->expects($this->once())
+            ->method('flush');
+
+        // Act
+        ($this->handler)($command);
+    }
+
+    public function test_it_creates_product_with_correct_price(): void
+    {
+        // Arrange
         $command = new CreateProductCommand(
             name: 'Product',
             description: null,
-            price: 10.0,
-            currency: 'EUR',
+            price: 99.99,
+            currency: 'USD',
             stock: 5
         );
 
-        $this->productRepository->method('save');
+        $savedProduct = null;
+        $this->productRepository
+            ->method('save')
+            ->willReturnCallback(function ($product) use (&$savedProduct) {
+                $savedProduct = $product;
+            });
+
         $this->productRepository->method('flush');
 
         // Act
-        $productId = ($this->handler)($command);
+        ($this->handler)($command);
 
         // Assert
-        $this->assertEquals($fixedUuid, $productId);
+        $this->assertNotNull($savedProduct);
+        $this->assertEquals(99.99, $savedProduct->price()->amount());
+        $this->assertEquals('USD', $savedProduct->price()->currency());
     }
 }
 

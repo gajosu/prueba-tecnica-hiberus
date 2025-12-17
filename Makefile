@@ -41,11 +41,31 @@ fixtures: ## Load fixtures (if any)
 		echo "No fixtures configured yet"; \
 	fi
 
-test: ## Run unit tests
+test: ## Run all tests
 	@docker-compose exec php php bin/phpunit
+
+test-unit: ## Run only unit tests
+	@docker-compose exec php php bin/phpunit --testsuite=Unit
+
+test-infrastructure: ## Run only infrastructure tests
+	@docker-compose exec php php bin/phpunit --testsuite=Infrastructure
 
 test-coverage: ## Run tests with coverage
 	@docker-compose exec php php bin/phpunit --coverage-html var/coverage
+
+test-db-create: ## Create test database
+	@docker-compose exec php php bin/console doctrine:database:create --env=test --if-not-exists
+
+test-db-migrate: ## Run migrations on test database
+	@docker-compose exec php php bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+test-db-drop: ## Drop test database
+	@docker-compose exec php php bin/console doctrine:database:drop --env=test --force --if-exists
+
+test-db-reset: ## Reset test database (drop, create, migrate)
+	@make test-db-drop
+	@make test-db-create
+	@make test-db-migrate
 
 clean: ## Clear cache and logs
 	@docker-compose exec php php bin/console cache:clear

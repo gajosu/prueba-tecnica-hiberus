@@ -37,3 +37,8 @@ services:
     App\Order\Application\CheckoutOrder\CheckoutOrderHandler: ~
 
     App\Customer\Application\SimulatedLogin\SimulatedLoginHandler: ~
+
+when@test:
+    services:
+        _defaults:
+            public: true
