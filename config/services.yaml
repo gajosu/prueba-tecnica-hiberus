@@ -61,6 +61,11 @@ services:
         tags:
             - { name: kernel.event_subscriber }
 
+    # Exception Listener for formatted error responses
+    App\Shared\Infrastructure\EventListener\ExceptionListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, priority: 100 }
+
 when@test:
     services:
         _defaults:

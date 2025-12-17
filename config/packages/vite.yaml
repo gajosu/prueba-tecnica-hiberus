@@ -1,8 +1,12 @@
 pentatrion_vite:
     public_directory: public
-    build_directory: public/build
+    build_directory: build
     default_build: app
     configs:
         app:
-            build_directory: public/build
-
+            build_directory: build
+            script_attributes:
+                defer: true
+                type: module
+            link_attributes:
+                rel: stylesheet
