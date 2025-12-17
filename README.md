@@ -45,10 +45,10 @@ chmod +x setup.sh
    
    Asegúrate de que el archivo `.env` tenga la siguiente configuración:
    ```
-   DATABASE_URL=mysql://app:app@database:3306/app?serverVersion=8.0
+   DATABASE_URL=postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8
    ```
    
-   **Nota:** El puerto externo de MySQL es 3307 para evitar conflictos. Internamente en Docker usa el puerto 3306.
+   **Nota:** El puerto externo de PostgreSQL es 5433 para evitar conflictos. Internamente en Docker usa el puerto 5432.
 
 4. **Ejecutar migraciones:**
    ```bash
@@ -78,7 +78,7 @@ Usa `make help` para ver todos los comandos disponibles:
 - `make clean` - Limpiar cache y logs
 - `make logs` - Ver logs de Docker
 - `make shell` - Abrir shell en contenedor PHP
-- `make db-shell` - Abrir shell de MySQL
+- `make db-shell` - Abrir shell de PostgreSQL
 
 ## Estructura del Proyecto
 
@@ -97,10 +97,9 @@ prueba-tecnica-hiberus/
 ## Acceso a la Aplicación
 
 - **Aplicación Symfony:** http://localhost:8000
-- **phpMyAdmin:** http://localhost:8080
-- **MySQL:** localhost:3307
+- **PostgreSQL:** localhost:5433
 
-### Credenciales MySQL
+### Credenciales PostgreSQL
 
 - Usuario: `app`
 - Contraseña: `app`
@@ -156,7 +155,7 @@ php bin/phpunit
   - Symfony 7
   - PHP 8.2+
   - Doctrine ORM
-  - MySQL 8.0
+  - PostgreSQL 16
 
 - **Frontend:**
   - React 18
@@ -165,8 +164,8 @@ php bin/phpunit
 
 - **Infraestructura:**
   - Docker & Docker Compose
-  - PHP-FPM
-  - MySQL 8.0
+  - PHP-CLI
+  - PostgreSQL 16
 
 ## Notas
 

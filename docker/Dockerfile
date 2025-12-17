@@ -1,33 +1,34 @@
 FROM php:8.2-cli
 
-# Instalar dependencias del sistema
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libpq-dev \
     zip \
     unzip \
     nodejs \
     npm \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd \
-    && docker-php-ext-enable pdo_mysql \
+    && docker-php-ext-install pdo_pgsql pgsql mbstring exif pcntl bcmath gd \
+    && docker-php-ext-enable pdo_pgsql pgsql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar Composer
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar directorio de trabajo
+# Set working directory
 WORKDIR /var/www/html
 
-# Copiar archivos de configuración
+# Copy configuration files
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 
-# Exponer puerto
+# Expose port
 EXPOSE 8000
 
-# Comando por defecto (servidor de desarrollo de PHP)
+# Default command (PHP development server)
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
 

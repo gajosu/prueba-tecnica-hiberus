@@ -64,8 +64,8 @@ logs: ## View Docker logs
 shell: ## Open shell in PHP container
 	@docker-compose exec php bash
 
-db-shell: ## Open MySQL shell
-	@docker-compose exec database mysql -u app -papp app
+db-shell: ## Open PostgreSQL shell
+	@docker-compose exec database psql -U app -d app
 
 reset: ## Reset everything (stop, clean volumes, reinstall)
 	@docker-compose down -v

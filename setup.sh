@@ -54,7 +54,7 @@ if [ ! -f ".env" ]; then
     cat > .env << 'EOF'
 APP_ENV=dev
 APP_SECRET=$(openssl rand -hex 32)
-DATABASE_URL="mysql://app:app@database:3306/app?serverVersion=8.0&charset=utf8mb4"
+DATABASE_URL="postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8"
 EOF
 fi
 
@@ -92,16 +92,16 @@ echo ""
 # Start database first
 echo -e "${BLUE}[6/11] Starting database...${NC}"
 docker-compose up -d database
-echo "Waiting for MySQL to be ready..."
+echo "Waiting for PostgreSQL to be ready..."
 sleep 10
 
-# Wait for MySQL to be ready
-until docker-compose exec -T database mysqladmin ping -h localhost --silent 2>/dev/null; do
-    echo "Waiting for MySQL..."
+# Wait for PostgreSQL to be ready
+until docker-compose exec -T database pg_isready -U app -d app 2>/dev/null; do
+    echo "Waiting for PostgreSQL..."
     sleep 2
 done
 
-echo -e "${GREEN}✓ MySQL is ready${NC}"
+echo -e "${GREEN}✓ PostgreSQL is ready${NC}"
 echo ""
 
 # Start all containers
@@ -162,16 +162,17 @@ fi
 echo ""
 
 # Show access information
+APP_PORT=${APP_PORT:-8777}
+
 echo "=========================================="
 echo -e "${GREEN}  Setup completed successfully!${NC}"
 echo "=========================================="
 echo ""
 echo "Access Information:"
-echo "  - Symfony Application: http://localhost:8000"
-echo "  - phpMyAdmin: http://localhost:8080"
-echo "  - MySQL: localhost:3307 (host) / database:3306 (container)"
+echo "  - Symfony Application: http://localhost:${APP_PORT}"
+echo "  - PostgreSQL: localhost:5433 (host) / database:5432 (container)"
 echo ""
-echo "MySQL Credentials:"
+echo "PostgreSQL Credentials:"
 echo "  - User: app"
 echo "  - Password: app"
 echo "  - Database: app"
