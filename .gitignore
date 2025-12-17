@@ -1,0 +1,50 @@
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> Node.js ###
+/node_modules/
+/package-lock.json
+/yarn.lock
+###< Node.js ###
+
+###> Vite ###
+/public/build/
+###< Vite ###
+
+###> Docker ###
+.docker/
+###< Docker ###
+
+###> IDE ###
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+###< IDE ###
+
+###> OS ###
+.DS_Store
+Thumbs.db
+###< OS ###
+
+###> Logs ###
+*.log
+###< Logs ###
+
+###> Database ###
+*.sqlite
+*.db
+###< Database ###

@@ -1,0 +1,8 @@
+pentatrion_vite:
+    public_directory: public
+    build_directory: public/build
+    default_build: app
+    configs:
+        app:
+            build_directory: public/build
+
