@@ -270,11 +270,12 @@ final class OrderTest extends FeatureAuthenticatedTestCase
             'paymentMethod' => 'simulated',
         ], $userToken);
 
-        // Assert - Should get an error response (500 for domain exceptions)
-        $errorResponse = $this->assertJsonResponse(500);
+        // Assert - Should get an error response (400 for insufficient stock)
+        $errorResponse = $this->assertJsonResponse(400);
         $this->assertArrayHasKey('error', $errorResponse);
-        // In test env, detailed error messages might not be available
-        // Just verify we get an error response
+        $this->assertArrayHasKey('type', $errorResponse);
+        $this->assertEquals('insufficient_stock', $errorResponse['type']);
+        $this->assertStringContainsString('Insufficient stock', $errorResponse['error']);
     }
 
     public function test_stock_is_reduced_after_successful_checkout(): void
@@ -321,11 +322,12 @@ final class OrderTest extends FeatureAuthenticatedTestCase
             'paymentMethod' => 'simulated',
         ], $userToken);
 
-        // Assert - Should fail due to insufficient stock (500 for domain exceptions)
-        $errorResponse = $this->assertJsonResponse(500);
+        // Assert - Should fail due to insufficient stock (400 for insufficient stock)
+        $errorResponse = $this->assertJsonResponse(400);
         $this->assertArrayHasKey('error', $errorResponse);
-        // In test env, detailed error messages might not be available
-        // Just verify we get an error response
+        $this->assertArrayHasKey('type', $errorResponse);
+        $this->assertEquals('insufficient_stock', $errorResponse['type']);
+        $this->assertStringContainsString('Insufficient stock', $errorResponse['error']);
     }
 }
 
