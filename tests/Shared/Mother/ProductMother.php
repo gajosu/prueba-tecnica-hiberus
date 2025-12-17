@@ -28,6 +28,7 @@ final class ProductMother
         ?string $description = null,
         ?Money $price = null,
         ?int $stock = null,
+        ?string $imageUrl = null,
         ?bool $active = null
     ): Product {
         return new Product(
@@ -36,6 +37,7 @@ final class ProductMother
             $description ?? self::faker()->sentence(),
             $price ?? MoneyMother::random(),
             $stock ?? self::faker()->numberBetween(0, 100),
+            $imageUrl ?? 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
             $active ?? true
         );
     }

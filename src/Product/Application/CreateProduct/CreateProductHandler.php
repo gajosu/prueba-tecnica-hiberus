@@ -27,7 +27,8 @@ final class CreateProductHandler
             $command->name,
             $command->description,
             $price,
-            $command->stock
+            $command->stock,
+            $command->imageUrl
         );
 
         $this->productRepository->save($product);

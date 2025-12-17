@@ -31,6 +31,9 @@ class Product
     #[ORM\Column(type: 'integer')]
     private int $stock;
 
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $imageUrl;
+
     #[ORM\Column(type: 'boolean')]
     private bool $active;
 
@@ -46,6 +49,7 @@ class Product
         ?string $description,
         Money $price,
         int $stock,
+        ?string $imageUrl = null,
         bool $active = true
     ) {
         $this->id = $id;
@@ -54,6 +58,7 @@ class Product
         $this->price = $price->amount();
         $this->currency = $price->currency();
         $this->stock = $stock;
+        $this->imageUrl = $imageUrl;
         $this->active = $active;
         $this->createdAt = new DateTimeImmutable();
         $this->updatedAt = null;
@@ -82,6 +87,11 @@ class Product
     public function stock(): int
     {
         return $this->stock;
+    }
+
+    public function imageUrl(): ?string
+    {
+        return $this->imageUrl;
     }
 
     public function isActive(): bool

@@ -11,7 +11,8 @@ final class CreateProductCommand
         public readonly ?string $description,
         public readonly float $price,
         public readonly string $currency,
-        public readonly int $stock
+        public readonly int $stock,
+        public readonly ?string $imageUrl = null
     ) {
     }
 }

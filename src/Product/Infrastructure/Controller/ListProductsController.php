@@ -68,7 +68,8 @@ final class ListProductsController
                             new OA\Property(property: 'description', type: 'string'),
                             new OA\Property(property: 'price', type: 'number', example: 1299.99),
                             new OA\Property(property: 'currency', type: 'string', example: 'EUR'),
-                            new OA\Property(property: 'stock', type: 'integer', example: 50)
+                            new OA\Property(property: 'stock', type: 'integer', example: 50),
+                            new OA\Property(property: 'image_url', type: 'string', example: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=800&q=80')
                         ]
                     )
                 ),

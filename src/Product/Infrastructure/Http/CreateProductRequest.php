@@ -26,7 +26,11 @@ final class CreateProductRequest
 
         #[Assert\PositiveOrZero(message: 'Stock cannot be negative')]
         #[Assert\Type(type: 'integer', message: 'Stock must be an integer')]
-        public readonly int $stock = 0
+        public readonly int $stock = 0,
+
+        #[Assert\Url(message: 'Image URL must be a valid URL')]
+        #[Assert\Length(max: 500)]
+        public readonly ?string $imageUrl = null
     ) {
     }
 }

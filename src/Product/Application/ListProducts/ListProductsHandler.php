@@ -31,6 +31,7 @@ final class ListProductsHandler
                 'price' => $product->price()->amount(),
                 'currency' => $product->price()->currency(),
                 'stock' => $product->stock(),
+                'image_url' => $product->imageUrl(),
                 'active' => $product->isActive(),
                 'created_at' => $product->createdAt()->format('Y-m-d H:i:s'),
             ], $products),

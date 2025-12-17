@@ -80,7 +80,8 @@ final class CreateProductController extends AbstractApiController
                 description: $dto->description,
                 price: $dto->price,
                 currency: $dto->currency,
-                stock: $dto->stock
+                stock: $dto->stock,
+                imageUrl: $dto->imageUrl
             );
 
             $productId = ($this->handler)($command);
