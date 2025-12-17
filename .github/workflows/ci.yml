@@ -15,6 +15,10 @@ jobs:
       matrix:
         php-version: ['8.2', '8.3']
 
+    env:
+      DATABASE_URL: postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8
+      APP_ENV: test
+
     services:
       postgres:
         image: postgres:16
@@ -42,12 +46,17 @@ jobs:
           coverage: xdebug
           tools: composer:v2
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -56,44 +65,81 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Copy .env.test
-        run: cp .env.test.local .env.test || cp .env .env.test
+      - name: Configure environment
+        run: |
+          # Create .env.test base file
+          cat > .env.test << 'EOF'
+          APP_ENV=test
+          APP_SECRET=test-secret-key-for-ci
+          DATABASE_URL=postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8
+          CORS_ALLOW_ORIGIN='^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
+          JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+          JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+          JWT_PASSPHRASE=test-passphrase
+          EOF
+
+          # Also create .env.test.local to override any values
+          echo "DATABASE_URL=postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8" > .env.test.local
+
+          echo "📝 Environment files created:"
+          echo "--- .env.test ---"
+          cat .env.test
+          echo "--- .env.test.local ---"
+          cat .env.test.local
 
       - name: Generate JWT keys
         run: |
           mkdir -p config/jwt
-          php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction
+          php bin/console lexik:jwt:generate-keypair --skip-if-exists --no-interaction --env=test
 
-      - name: Create test database
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8
+      - name: Debug Symfony configuration
         run: |
+          echo "🔍 Checking Symfony environment configuration..."
+          php bin/console about --env=test | head -20
+          echo ""
+          echo "🔍 Checking Doctrine configuration..."
+          php bin/console doctrine:query:sql "SELECT 1" --env=test || echo "⚠️  Database not yet accessible"
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U app; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "✅ PostgreSQL is ready!"
+
+      - name: Verify database connection
+        run: |
+          echo "Testing database connection..."
+          PGPASSWORD=app psql -h localhost -U app -d app_test -c "SELECT version();"
+          echo "✅ Database connection successful!"
+
+      - name: Create and setup test database
+        run: |
+          echo "Creating test database..."
           php bin/console doctrine:database:create --env=test --if-not-exists
+          echo "Running migrations..."
           php bin/console doctrine:migrations:migrate --env=test --no-interaction
+          echo "Loading fixtures..."
           php bin/console doctrine:fixtures:load --env=test --no-interaction
+          echo "✅ Database setup completed!"
 
       - name: Run Unit Tests
-        run: php bin/phpunit --testsuite=unit --testdox
+        run: php bin/phpunit --testsuite=unit --testdox --colors=always
 
       - name: Run Infrastructure Tests
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8
-        run: php bin/phpunit --testsuite=infrastructure --testdox
+        run: php bin/phpunit --testsuite=infrastructure --testdox --colors=always
 
       - name: Run Feature Tests
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8
-        run: php bin/phpunit --testsuite=feature --testdox
+        run: php bin/phpunit --testsuite=feature --testdox --colors=always
 
       - name: Run All Tests with Coverage
         if: matrix.php-version == '8.2'
-        env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app_test?serverVersion=16&charset=utf8
-        run: php bin/phpunit --coverage-text --coverage-clover coverage.xml
+        run: php bin/phpunit --coverage-text --coverage-clover coverage.xml --colors=always
 
       - name: Upload coverage to Codecov
         if: matrix.php-version == '8.2'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
@@ -122,7 +168,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: public/build/
