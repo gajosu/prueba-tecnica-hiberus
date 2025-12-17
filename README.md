@@ -1,6 +1,24 @@
 # Prueba Técnica Hiberus
 
-Sistema básico de gestión de pedidos y pagos desarrollado con Symfony 7 y React.
+Sistema básico de gestión de pedidos y pagos desarrollado con Symfony 7 y React con arquitectura hexagonal.
+
+## 📑 Índice de Contenidos
+
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Comandos Disponibles](#comandos-disponibles)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Acceso a la Aplicación](#acceso-a-la-aplicación)
+- [Desarrollo](#desarrollo)
+- [Pruebas](#pruebas)
+- [API REST](#api-rest)
+- [Autenticación y Seguridad](#autenticación-y-seguridad)
+- [Roles y Permisos](#roles-y-permisos)
+- [Arquitectura](#arquitectura)
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Solución de Problemas](#solución-de-problemas)
+
+---
 
 ## Requisitos
 
@@ -341,6 +359,120 @@ Los tests de infraestructura y funcionales utilizan una base de datos separada (
 ```bash
 make test-db-reset
 ```
+
+### Cobertura de Tests
+
+El proyecto incluye **71 tests con 794 assertions** que cubren:
+- **Tests Unitarios**: Lógica de negocio (Handlers, Commands, Queries)
+- **Tests de Infraestructura**: Repositorios y persistencia con Doctrine
+- **Tests Funcionales**: Endpoints de la API con requests HTTP reales
+
+Todas las pruebas utilizan **Object Mothers** con FakerPHP para generar datos de prueba consistentes.
+
+## Autenticación y Seguridad
+
+### 🔐 JWT (JSON Web Tokens)
+
+El sistema utiliza **JWT real** (no simulado) con `lexik/jwt-authentication-bundle`:
+
+**Flujo de autenticación:**
+1. Usuario hace login con email/password en `/api/login`
+2. Sistema valida credenciales y genera un JWT token
+3. Cliente incluye el token en el header: `Authorization: Bearer {token}`
+4. Sistema valida el token en cada request protegido
+
+**Configuración:**
+- Claves RSA en `config/jwt/`
+- Tiempo de vida del token: 1 hora (configurable)
+- Password hashing con `bcrypt`
+
+### 🛡️ Guards y Middleware
+
+Similar a los guards/middleware de Laravel, implementamos:
+
+**Guards personalizados:**
+- `AuthGuard`: Verifica que el usuario esté autenticado
+- `AdminGuard`: Verifica que el usuario tenga rol de administrador
+
+**Atributos PHP 8:**
+```php
+#[RequiresAuth]  // Requiere autenticación
+#[RequiresRole('ROLE_ADMIN')]  // Requiere rol específico
+```
+
+**Event Listener:**
+`SecurityAttributeListener` intercepta requests y valida los atributos de seguridad antes de ejecutar los controladores.
+
+**Servicio CurrentUser:**
+```php
+$this->currentUser->id();      // ID del usuario autenticado
+$this->currentUser->email();   // Email
+$this->currentUser->isAdmin(); // Verificar si es admin
+```
+
+## Roles y Permisos
+
+### 📊 Jerarquía de Roles
+
+El sistema tiene **solo 2 roles** con herencia automática:
+
+```
+ROLE_ADMIN (Administrador)
+    │
+    └─> hereda ──> ROLE_USER (Usuario normal)
+```
+
+**Configuración en** `config/packages/security.yaml`:
+```yaml
+role_hierarchy:
+    ROLE_ADMIN: ROLE_USER
+```
+
+### 🎯 Permisos por Rol
+
+| Rol | Permisos |
+|-----|----------|
+| `ROLE_ADMIN` | ✅ Todos los endpoints (crear productos + endpoints de usuario) |
+| `ROLE_USER` | ✅ Solo endpoints de usuario (crear/ver pedidos) |
+
+### 👤 Usuarios de Prueba
+
+| Email | Password | Rol |
+|-------|----------|-----|
+| `admin@example.com` | `password` | `ROLE_ADMIN` |
+| `customer1@example.com` | `password` | `ROLE_USER` |
+| `customer2@example.com` | `password` | `ROLE_USER` |
+
+## Arquitectura
+
+### 🏗️ Diseño Hexagonal (Ports & Adapters)
+
+El proyecto sigue una arquitectura hexagonal con vertical slicing por bounded context:
+
+```
+src/
+├── Product/              # Bounded Context: Productos
+│   ├── Application/      # Casos de uso (Commands, Queries, Handlers)
+│   ├── Domain/          # Lógica de negocio (Entities, Value Objects)
+│   └── Infrastructure/  # Adaptadores (Controllers, Repositories, DTOs)
+├── Order/               # Bounded Context: Pedidos
+├── Customer/            # Bounded Context: Clientes
+└── Shared/              # Código compartido entre contextos
+```
+
+### 🎯 Principios Aplicados
+
+- **DDD (Domain-Driven Design)**: Bounded Contexts, Entities, Value Objects
+- **CQRS**: Separación de Commands y Queries
+- **Repository Pattern**: Interfaces para abstracción de persistencia
+- **Dependency Inversion**: Dependencias apuntan hacia el dominio
+- **SOLID Principles**: Código mantenible y testeable
+
+### 📦 Value Objects
+
+- `Money`: Encapsula precio y moneda
+- `OrderStatus`: Estados del pedido (pending, paid, cancelled)
+- Custom UUID generation service desacoplado
 
 ## Solución de Problemas
 
