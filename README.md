@@ -56,7 +56,8 @@ chmod +x setup.sh
    ```bash
    make install
    # o manualmente:
-   composer install && npm install
+   docker-compose exec php composer install
+   docker-compose exec php npm install
    ```
 
 3. **Configurar base de datos:**
@@ -68,35 +69,83 @@ chmod +x setup.sh
    
    **Nota:** El puerto externo de PostgreSQL es 5433 para evitar conflictos. Internamente en Docker usa el puerto 5432.
 
-4. **Ejecutar migraciones:**
+4. **Ejecutar migraciones (desarrollo):**
    ```bash
    make migrate
    # o
-   php bin/console doctrine:migrations:migrate --no-interaction
+   docker-compose exec php php bin/console doctrine:migrations:migrate --no-interaction
    ```
 
-5. **Cargar fixtures (si existen):**
+5. **Cargar fixtures (desarrollo):**
    ```bash
    make fixtures
+   # o
+   docker-compose exec php php bin/console doctrine:fixtures:load --no-interaction
+   ```
+
+6. **Configurar base de datos de test:**
+   ```bash
+   # Crear base de datos de test
+   docker-compose exec php php bin/console doctrine:database:create --env=test --if-not-exists
+   
+   # Ejecutar migraciones en test
+   docker-compose exec php php bin/console doctrine:migrations:migrate --env=test --no-interaction
+   
+   # Cargar fixtures en test
+   docker-compose exec php php bin/console doctrine:fixtures:load --env=test --no-interaction
+   
+   # O usar el comando todo-en-uno:
+   make test-db-reset
+   ```
+
+7. **Construir assets del frontend:**
+   ```bash
+   make build
+   # o
+   docker-compose exec php npm run build
    ```
 
 ## Comandos Disponibles
 
 Usa `make help` para ver todos los comandos disponibles:
 
-- `make setup` - Ejecutar setup completo
+### Gestión de Contenedores
+- `make setup` - Ejecutar setup completo (desarrollo + test)
 - `make up` - Levantar contenedores Docker
 - `make down` - Detener contenedores Docker
-- `make install` - Instalar dependencias (composer + npm)
-- `make migrate` - Ejecutar migraciones
-- `make fixtures` - Cargar fixtures
-- `make test` - Ejecutar pruebas unitarias
-- `make build` - Construir assets con Vite
-- `make dev` - Iniciar servidor Vite en desarrollo
-- `make clean` - Limpiar cache y logs
+- `make restart` - Reiniciar contenedores
 - `make logs` - Ver logs de Docker
 - `make shell` - Abrir shell en contenedor PHP
 - `make db-shell` - Abrir shell de PostgreSQL
+
+### Dependencias
+- `make install` - Instalar dependencias (composer + npm)
+
+### Base de Datos (Desarrollo)
+- `make migrate` - Ejecutar migraciones
+- `make migrate-diff` - Crear nueva migración
+- `make fixtures` - Cargar fixtures
+
+### Base de Datos (Test)
+- `make test-db-create` - Crear base de datos de test
+- `make test-db-migrate` - Ejecutar migraciones en test
+- `make test-db-fixtures` - Cargar fixtures en test
+- `make test-db-drop` - Eliminar base de datos de test
+- `make test-db-reset` - Resetear DB de test (drop + create + migrate + fixtures)
+
+### Tests
+- `make test` - Ejecutar todos los tests
+- `make test-unit` - Ejecutar tests unitarios
+- `make test-infrastructure` - Ejecutar tests de infraestructura
+- `make test-feature` - Ejecutar tests de feature
+- `make test-coverage` - Ejecutar tests con reporte de coverage
+
+### Frontend
+- `make build` - Construir assets con Vite (producción)
+- `make dev` - Iniciar servidor Vite en desarrollo
+
+### Utilidades
+- `make clean` - Limpiar cache y logs
 
 ## Estructura del Proyecto
 
@@ -114,20 +163,28 @@ prueba-tecnica-hiberus/
 
 ## 🚀 Inicio Rápido
 
-Para levantar la aplicación completa (Backend + Frontend):
+Para levantar la aplicación completa (Backend + Frontend + Tests):
 
 ```bash
-# 1. Levantar contenedores y configurar BD
+# 1. Ejecutar setup completo (configura todo automáticamente)
 make setup
 
-# 2. En una terminal, el backend ya está corriendo en el puerto 8777
-# 3. En otra terminal, iniciar el servidor de desarrollo de Vite
+# 2. Acceder a la aplicación en http://localhost:8777
+
+# 3. (Opcional) Para desarrollo con Hot Reload, iniciar Vite dev server
 make dev
 # o
-npm run dev
+docker-compose exec php npm run dev
 ```
 
-Luego accede a **http://localhost:8777** en tu navegador.
+**El comando `make setup` configura:**
+- ✅ Contenedores Docker (PHP + PostgreSQL)
+- ✅ Dependencias (Composer + NPM)
+- ✅ Base de datos de desarrollo + migraciones + fixtures
+- ✅ Base de datos de test + migraciones + fixtures
+- ✅ Assets del frontend compilados
+
+**¡Todo listo en un solo comando!** 🎉
 
 ## Acceso a la Aplicación
 
@@ -139,15 +196,22 @@ Luego accede a **http://localhost:8777** en tu navegador.
 
 ### Credenciales de Acceso
 
-**Usuarios de prueba:**
+**Usuarios de prueba (cargados con fixtures):**
 - **Admin:** admin@example.com / password
-- **Usuario:** customer1@example.com / password
-- **Usuario:** customer2@example.com / password
+  - Tiene acceso al panel de administración (`/admin/products`)
+  - Puede crear productos
+- **Usuario 1:** customer1@example.com / password
+  - Usuario estándar con permisos de compra
+- **Usuario 2:** customer2@example.com / password
+  - Usuario estándar con permisos de compra
 
 **PostgreSQL:**
 - Usuario: `app`
 - Contraseña: `app`
-- Base de datos: `app`
+- Base de datos (dev): `app`
+- Base de datos (test): `app_test`
+- Puerto externo: `5433`
+- Puerto interno (Docker): `5432`
 
 ## Desarrollo
 
@@ -239,20 +303,26 @@ assets/
 El proyecto cuenta con una suite completa de tests dividida en:
 - **Unit Tests**: Tests unitarios sin dependencias externas
 - **Infrastructure Tests**: Tests de integración con base de datos
+- **Feature Tests**: Tests end-to-end de la API
 
 ### Configurar Base de Datos de Test
 
-Antes de ejecutar tests de infraestructura, crear la BD de test:
+**Si ejecutaste `make setup`, la base de datos de test ya está configurada.**
+
+Para configurarla manualmente o resetearla:
 
 ```bash
-# Crear base de datos de test
-make test-db-create
-
-# Ejecutar migraciones en test
-make test-db-migrate
-
-# O resetear completamente (drop + create + migrate)
+# Opción 1: Resetear todo (recomendado)
 make test-db-reset
+
+# Opción 2: Paso a paso
+make test-db-create      # Crear base de datos
+make test-db-migrate     # Ejecutar migraciones
+make test-db-fixtures    # Cargar fixtures
+
+# Opción 3: Solo eliminar y recrear
+make test-db-drop        # Eliminar base de datos
+make test-db-create      # Crear de nuevo
 ```
 
 ### Ejecutar Tests
