@@ -63,7 +63,16 @@ final class CheckoutOrderController extends AbstractApiController
             ]
         )
     )]
-    #[OA\Response(response: 400, description: 'Bad request (insufficient stock, payment failed, etc.)')]
+    #[OA\Response(
+        response: 400,
+        description: 'Bad request (insufficient stock, payment failed, etc.)',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'error', type: 'string', example: 'Insufficient stock for Product X. Available: 1, Required: 5'),
+                new OA\Property(property: 'type', type: 'string', example: 'insufficient_stock', enum: ['insufficient_stock', 'domain_error'])
+            ]
+        )
+    )]
     #[OA\Response(response: 401, description: 'Unauthorized')]
     #[OA\Response(response: 404, description: 'Order not found')]
     public function __invoke(string $id, Request $request): JsonResponse
