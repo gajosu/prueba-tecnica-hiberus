@@ -8,6 +8,8 @@ use App\Customer\Application\Login\LoginCommand;
 use App\Customer\Application\Login\LoginHandler;
 use App\Customer\Infrastructure\Http\LoginRequest;
 use App\Shared\Infrastructure\Http\AbstractApiController;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +28,38 @@ final class LoginController extends AbstractApiController
     }
 
     #[Route('/api/login', name: 'api_login', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/login',
+        summary: 'User login',
+        description: 'Authenticate user and get JWT token. Use admin@example.com / customer1@example.com with password "password"',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: new Model(type: LoginRequest::class))
+        ),
+        tags: ['Authentication']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Login successful',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'customer_id', type: 'string', example: 'admin-001'),
+                new OA\Property(property: 'email', type: 'string', example: 'admin@example.com'),
+                new OA\Property(property: 'name', type: 'string', example: 'Admin User'),
+                new OA\Property(property: 'role', type: 'string', example: 'ROLE_ADMIN'),
+                new OA\Property(property: 'token', type: 'string', example: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Invalid credentials',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'error', type: 'string', example: 'Invalid credentials')
+            ]
+        )
+    )]
     public function __invoke(Request $request): JsonResponse
     {
         $dto = $this->validateRequest($request, LoginRequest::class);

@@ -1,0 +1,15 @@
+# OpenAPI Documentation Routes
+app.openapi:
+    path: /api/doc/openapi
+    methods: GET
+    defaults:
+        _controller: nelmio_api_doc.controller.swagger_json
+        area: default
+
+app.swagger_ui:
+    path: /api/doc
+    methods: GET
+    defaults:
+        _controller: nelmio_api_doc.controller.swagger_ui
+        area: default
+

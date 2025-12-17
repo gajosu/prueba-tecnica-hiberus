@@ -12,6 +12,8 @@ use App\Product\Domain\Exception\ProductNotFoundException;
 use App\Shared\Infrastructure\Http\AbstractApiController;
 use App\Shared\Infrastructure\Security\Attribute\RequiresRole;
 use App\Shared\Infrastructure\Security\CurrentUser;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +34,33 @@ final class CreateOrderController extends AbstractApiController
     }
 
     #[Route('/api/orders', name: 'api_orders_create', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/orders',
+        summary: 'Create a new order',
+        description: 'Creates a new order for the authenticated user. Customer ID is automatically obtained from JWT token.',
+        security: [['Bearer' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: new Model(type: CreateOrderRequest::class))
+        ),
+        tags: ['Orders']
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Order created successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'id', type: 'string', example: 'order-123'),
+                new OA\Property(property: 'message', type: 'string', example: 'Order created successfully')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Validation error or insufficient stock'
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'Product not found')]
     public function __invoke(Request $request): JsonResponse
     {
         $dto = $this->validateRequest($request, CreateOrderRequest::class);

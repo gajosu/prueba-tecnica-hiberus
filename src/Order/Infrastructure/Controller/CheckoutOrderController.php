@@ -11,6 +11,8 @@ use App\Order\Infrastructure\Http\CheckoutOrderRequest;
 use App\Shared\Infrastructure\Http\AbstractApiController;
 use App\Shared\Infrastructure\Security\Attribute\RequiresRole;
 use App\Shared\Infrastructure\Security\CurrentUser;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,6 +33,37 @@ final class CheckoutOrderController extends AbstractApiController
     }
 
     #[Route('/api/orders/{id}/checkout', name: 'api_orders_checkout', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/orders/{id}/checkout',
+        summary: 'Checkout order',
+        description: 'Process payment for an order (simulated)',
+        security: [['Bearer' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: new Model(type: CheckoutOrderRequest::class))
+        ),
+        tags: ['Orders']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        description: 'Order ID',
+        required: true,
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Payment processed successfully',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'message', type: 'string', example: 'Payment processed successfully'),
+                new OA\Property(property: 'order_id', type: 'string'),
+                new OA\Property(property: 'status', type: 'string', example: 'paid')
+            ]
+        )
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'Order not found')]
     public function __invoke(string $id, Request $request): JsonResponse
     {
         $dto = $this->validateRequest($request, CheckoutOrderRequest::class);

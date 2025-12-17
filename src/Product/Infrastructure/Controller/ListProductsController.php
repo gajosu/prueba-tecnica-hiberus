@@ -6,6 +6,7 @@ namespace App\Product\Infrastructure\Controller;
 
 use App\Product\Application\ListProducts\ListProductsHandler;
 use App\Product\Application\ListProducts\ListProductsQuery;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,6 +20,71 @@ final class ListProductsController
     }
 
     #[Route('/api/products', name: 'api_products_list', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/products',
+        summary: 'List all products with pagination',
+        tags: ['Products']
+    )]
+    #[OA\Parameter(
+        name: 'search',
+        in: 'query',
+        description: 'Search term for product name',
+        required: false,
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Parameter(
+        name: 'page',
+        in: 'query',
+        description: 'Page number',
+        required: false,
+        schema: new OA\Schema(type: 'integer', default: 1)
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        description: 'Items per page',
+        required: false,
+        schema: new OA\Schema(type: 'integer', default: 10)
+    )]
+    #[OA\Parameter(
+        name: 'sort',
+        in: 'query',
+        description: 'Sort field',
+        required: false,
+        schema: new OA\Schema(type: 'string', default: 'created_at')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'List of products',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'data',
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'string', example: 'product-123'),
+                            new OA\Property(property: 'name', type: 'string', example: 'Laptop Dell XPS 13'),
+                            new OA\Property(property: 'description', type: 'string'),
+                            new OA\Property(property: 'price', type: 'number', example: 1299.99),
+                            new OA\Property(property: 'currency', type: 'string', example: 'EUR'),
+                            new OA\Property(property: 'stock', type: 'integer', example: 50)
+                        ]
+                    )
+                ),
+                new OA\Property(
+                    property: 'meta',
+                    properties: [
+                        new OA\Property(property: 'total', type: 'integer'),
+                        new OA\Property(property: 'page', type: 'integer'),
+                        new OA\Property(property: 'limit', type: 'integer'),
+                        new OA\Property(property: 'total_pages', type: 'integer')
+                    ],
+                    type: 'object'
+                )
+            ]
+        )
+    )]
     public function __invoke(Request $request): JsonResponse
     {
         try {

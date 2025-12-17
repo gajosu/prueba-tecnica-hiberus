@@ -1,0 +1,20 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: 'Sistema de Gestión de Pedidos - API'
+            description: 'API REST para gestión de productos, pedidos y pagos'
+            version: '1.0.0'
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        security:
+            - Bearer: []
+    areas:
+        default:
+            path_patterns:
+                - ^/api(?!/doc$)
+            host_patterns: []
+

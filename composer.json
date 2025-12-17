@@ -8,6 +8,7 @@
         "ext-ctype": "*",
         "ext-iconv": "*",
         "lexik/jwt-authentication-bundle": "^3.1",
+        "nelmio/api-doc-bundle": "^5.8",
         "nelmio/cors-bundle": "^2.6",
         "pentatrion/vite-bundle": "^8.2",
         "ramsey/uuid": "^4.9",

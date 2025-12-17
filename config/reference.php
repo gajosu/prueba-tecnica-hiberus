@@ -1438,6 +1438,55 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  *         cache?: scalar|null, // Storage to track blocked tokens // Default: "cache.app"
  *     },
  * }
+ * @psalm-type NelmioApiDocConfig = array{
+ *     type_info?: bool, // Use the symfony/type-info component for determining types. // Default: false
+ *     use_validation_groups?: bool, // If true, `groups` passed to #[Model] attributes will be used to limit validation constraints // Default: false
+ *     operation_id_generation?: \Nelmio\ApiDocBundle\Describer\OperationIdGeneration::ALWAYS_PREPEND|\Nelmio\ApiDocBundle\Describer\OperationIdGeneration::CONDITIONALLY_PREPEND|\Nelmio\ApiDocBundle\Describer\OperationIdGeneration::NO_PREPEND|"always_prepend"|"conditionally_prepend"|"no_prepend", // How to generate operation ids // Default: "always_prepend"
+ *     cache?: array{
+ *         pool?: scalar|null, // define cache pool to use // Default: null
+ *         item_id?: scalar|null, // define cache item id // Default: null
+ *     },
+ *     documentation?: array<string, mixed>,
+ *     media_types?: list<scalar|null>,
+ *     html_config?: array{ // UI configuration options
+ *         assets_mode?: scalar|null, // Default: "cdn"
+ *         swagger_ui_config?: array<mixed>,
+ *         redocly_config?: array<mixed>,
+ *         stoplight_config?: array<mixed>,
+ *     },
+ *     areas?: array<string, array{ // Default: {"default":{"path_patterns":[],"host_patterns":[],"with_attribute":false,"documentation":[],"name_patterns":[],"disable_default_routes":false,"cache":[],"security":[]}}
+ *         path_patterns?: list<scalar|null>,
+ *         host_patterns?: list<scalar|null>,
+ *         name_patterns?: list<scalar|null>,
+ *         security?: array<string, array{ // Default: []
+ *             type?: scalar|null,
+ *             scheme?: scalar|null,
+ *             in?: scalar|null,
+ *             name?: scalar|null,
+ *             description?: scalar|null,
+ *             openIdConnectUrl?: scalar|null,
+ *             ...<mixed>
+ *         }>,
+ *         with_attribute?: bool, // whether to filter by attributes // Default: false
+ *         disable_default_routes?: bool, // if set disables default routes without attributes // Default: false
+ *         documentation?: array<string, mixed>,
+ *         cache?: array{
+ *             pool?: scalar|null, // define cache pool to use // Default: null
+ *             item_id?: scalar|null, // define cache item id // Default: null
+ *         },
+ *     }>,
+ *     models?: array{
+ *         use_jms?: bool, // Default: false
+ *         names?: list<array{ // Default: []
+ *             alias: scalar|null,
+ *             type: scalar|null,
+ *             groups?: mixed, // Default: null
+ *             options?: mixed, // Default: null
+ *             serializationContext?: list<mixed>,
+ *             areas?: list<scalar|null>,
+ *         }>,
+ *     },
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1450,6 +1499,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  *     pentatrion_vite?: PentatrionViteConfig,
  *     security?: SecurityConfig,
  *     lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
+ *     nelmio_api_doc?: NelmioApiDocConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1463,6 +1513,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  *         pentatrion_vite?: PentatrionViteConfig,
  *         security?: SecurityConfig,
  *         lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
+ *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1476,6 +1527,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  *         pentatrion_vite?: PentatrionViteConfig,
  *         security?: SecurityConfig,
  *         lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
+ *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1489,6 +1541,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  *         pentatrion_vite?: PentatrionViteConfig,
  *         security?: SecurityConfig,
  *         lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
+ *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

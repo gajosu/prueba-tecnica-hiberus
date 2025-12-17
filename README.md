@@ -247,19 +247,31 @@ $order = OrderMother::withItems(3);
 
 La API está disponible en: `http://localhost:8777/api`
 
+### 📚 Documentación OpenAPI (Swagger)
+
+**Accede a la documentación interactiva de la API:**
+
+👉 **http://localhost:8777/api/doc**
+
+La documentación incluye:
+- ✅ Especificación completa de todos los endpoints
+- ✅ Schemas de request y response bodies
+- ✅ Autenticación JWT integrada
+- ✅ Probador interactivo (try it out)
+- ✅ Ejemplos de requests y responses
+
+También puedes obtener el JSON de OpenAPI en: **http://localhost:8777/api/doc/openapi**
+
 ### Endpoints Disponibles
 
-- **POST** `/api/login` - Autenticación simulada
-- **GET** `/api/products` - Listar productos (con paginación y búsqueda)
-- **POST** `/api/products` - Crear producto (Admin)
-- **POST** `/api/orders` - Crear pedido
-- **GET** `/api/orders/{id}` - Ver detalle de pedido
-- **POST** `/api/orders/{id}/checkout` - Checkout (pago simulado)
-
-### Documentación Completa
-
-- Ver `docs/API.md` para documentación detallada de cada endpoint
-- Importar `docs/Insomnia_Collection.json` en Postman/Insomnia para probar la API
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| **POST** | `/api/login` | Autenticación de usuario | No |
+| **GET** | `/api/products` | Listar productos (paginado) | No |
+| **POST** | `/api/products` | Crear producto | Admin |
+| **POST** | `/api/orders` | Crear pedido | User |
+| **GET** | `/api/orders/{id}` | Ver detalle de pedido | User |
+| **POST** | `/api/orders/{id}/checkout` | Procesar pago (simulado) | User |
 
 ### Ejemplos Rápidos
 
