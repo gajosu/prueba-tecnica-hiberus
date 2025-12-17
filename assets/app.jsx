@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { CartProvider } from '@/context/CartContext'
 import Layout from '@/components/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import AdminRoute from '@/components/AdminRoute'
 import LoginPage from '@/pages/LoginPage'
 import CatalogPage from '@/pages/CatalogPage'
 import CartPage from '@/pages/CartPage'
@@ -52,11 +53,11 @@ function App() {
             <Route
               path="/admin/products"
               element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <Layout>
                     <AdminProductsPage />
                   </Layout>
-                </ProtectedRoute>
+                </AdminRoute>
               }
             />
             <Route path="/" element={<Navigate to="/catalog" replace />} />
