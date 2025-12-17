@@ -3,143 +3,189 @@
 set -e
 
 echo "=========================================="
-echo "  Setup - Prueba Técnica Hiberus"
+echo "  Complete Setup - Technical Test"
 echo "=========================================="
 echo ""
 
-# Colores para output
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Función para verificar comandos
+# Function to check commands
 check_command() {
     if ! command -v $1 &> /dev/null; then
-        echo -e "${RED}Error: $1 no está instalado.${NC}" >&2
-        echo "Por favor instala $1 antes de continuar."
+        echo -e "${RED}Error: $1 is not installed.${NC}" >&2
+        echo "Please install $1 before continuing."
         exit 1
     fi
 }
 
-# Verificar requisitos
-echo "Verificando requisitos..."
+# Check requirements
+echo -e "${BLUE}[1/11] Checking requirements...${NC}"
 check_command docker
 check_command docker-compose
 
-echo -e "${GREEN}✓ Docker y Docker Compose están instalados${NC}"
+echo -e "${GREEN}✓ Docker and Docker Compose are installed${NC}"
 echo ""
 
-# Verificar si Docker está corriendo
+# Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
-    echo -e "${RED}Error: Docker no está corriendo.${NC}" >&2
-    echo "Por favor inicia Docker antes de continuar."
+    echo -e "${RED}Error: Docker is not running.${NC}" >&2
+    echo "Please start Docker before continuing."
     exit 1
 fi
 
-echo -e "${GREEN}✓ Docker está corriendo${NC}"
+echo -e "${GREEN}✓ Docker is running${NC}"
 echo ""
 
-# Levantar contenedores
-echo "Levantando contenedores Docker..."
-docker-compose up -d
+# Stop and clean existing containers
+echo -e "${BLUE}[2/11] Cleaning existing containers...${NC}"
+docker-compose down -v 2>/dev/null || true
+echo -e "${GREEN}✓ Cleaned existing containers${NC}"
+echo ""
 
-echo "Esperando a que MySQL esté listo..."
+# Create .env file if it doesn't exist
+echo -e "${BLUE}[3/11] Configuring environment...${NC}"
+if [ ! -f ".env" ]; then
+    echo "Creating .env file..."
+    cat > .env << 'EOF'
+APP_ENV=dev
+APP_SECRET=$(openssl rand -hex 32)
+DATABASE_URL="mysql://app:app@database:3306/app?serverVersion=8.0&charset=utf8mb4"
+EOF
+fi
+
+# Generate APP_SECRET if not exists or empty
+if ! grep -q "APP_SECRET=" .env || grep -q "APP_SECRET=$" .env || grep -q "APP_SECRET=\"\"" .env; then
+    echo "Generating APP_SECRET..."
+    APP_SECRET=$(openssl rand -hex 32)
+    if grep -q "APP_SECRET=" .env; then
+        sed -i.bak "s/APP_SECRET=.*/APP_SECRET=${APP_SECRET}/" .env && rm -f .env.bak
+    else
+        echo "APP_SECRET=${APP_SECRET}" >> .env
+    fi
+fi
+
+echo -e "${GREEN}✓ Environment configured${NC}"
+echo ""
+
+# Create necessary directories
+echo -e "${BLUE}[4/11] Creating directories...${NC}"
+mkdir -p var/cache var/log var/coverage
+echo -e "${GREEN}✓ Directories created${NC}"
+echo ""
+
+# Install Composer dependencies using Docker
+echo -e "${BLUE}[5/11] Installing PHP dependencies with Composer...${NC}"
+if [ ! -f "composer.json" ]; then
+    echo -e "${RED}Error: composer.json not found${NC}"
+    exit 1
+fi
+
+docker run --rm -v $(pwd):/app -w /app composer:latest install --ignore-platform-reqs --no-interaction --prefer-dist
+echo -e "${GREEN}✓ Composer dependencies installed${NC}"
+echo ""
+
+# Start database first
+echo -e "${BLUE}[6/11] Starting database...${NC}"
+docker-compose up -d database
+echo "Waiting for MySQL to be ready..."
 sleep 10
 
-# Verificar que MySQL esté listo
-until docker-compose exec -T database mysqladmin ping -h localhost --silent; do
-    echo "Esperando a MySQL..."
+# Wait for MySQL to be ready
+until docker-compose exec -T database mysqladmin ping -h localhost --silent 2>/dev/null; do
+    echo "Waiting for MySQL..."
     sleep 2
 done
 
-echo -e "${GREEN}✓ MySQL está listo${NC}"
+echo -e "${GREEN}✓ MySQL is ready${NC}"
 echo ""
 
-# Instalar dependencias de Composer
-echo "Instalando dependencias de Composer..."
-if [ ! -f "composer.json" ]; then
-    echo -e "${RED}Error: composer.json no encontrado${NC}"
-    exit 1
-fi
-
-composer install --no-interaction
-echo -e "${GREEN}✓ Dependencias de Composer instaladas${NC}"
+# Start all containers
+echo -e "${BLUE}[7/11] Starting all containers...${NC}"
+docker-compose up -d
+sleep 5
+echo -e "${GREEN}✓ All containers started${NC}"
 echo ""
 
-# Instalar dependencias de npm
-echo "Instalando dependencias de npm..."
+# Install npm dependencies
+echo -e "${BLUE}[8/11] Installing npm dependencies...${NC}"
 if [ ! -f "package.json" ]; then
-    echo -e "${YELLOW}⚠ package.json no encontrado, creando uno básico...${NC}"
-    npm init -y
-    npm install --save-dev vite @vitejs/plugin-react react react-dom
-    npm install --save-dev @types/react @types/react-dom
+    echo -e "${YELLOW}⚠ package.json not found, creating a basic one...${NC}"
+    docker-compose exec -T php npm init -y
+    docker-compose exec -T php npm install --save-dev vite @vitejs/plugin-react react react-dom
+    docker-compose exec -T php npm install --save-dev @types/react @types/react-dom
 fi
 
-npm install
-echo -e "${GREEN}✓ Dependencias de npm instaladas${NC}"
+docker-compose exec -T php npm install
+echo -e "${GREEN}✓ npm dependencies installed${NC}"
 echo ""
 
-# Ejecutar migraciones
-echo "Ejecutando migraciones de base de datos..."
-php bin/console doctrine:migrations:migrate --no-interaction || echo -e "${YELLOW}⚠ No hay migraciones pendientes${NC}"
-echo -e "${GREEN}✓ Migraciones ejecutadas${NC}"
+# Set permissions
+echo -e "${BLUE}[9/11] Setting permissions...${NC}"
+docker-compose exec -T php chmod -R 777 var/ 2>/dev/null || sudo chmod -R 777 var/
+echo -e "${GREEN}✓ Permissions configured${NC}"
 echo ""
 
-# Cargar fixtures (si existen)
-if [ -d "src/DataFixtures" ] && [ "$(ls -A src/DataFixtures 2>/dev/null)" ]; then
-    echo "Cargando fixtures..."
-    php bin/console doctrine:fixtures:load --no-interaction || echo -e "${YELLOW}⚠ No se pudieron cargar fixtures${NC}"
-    echo -e "${GREEN}✓ Fixtures cargadas${NC}"
+# Run migrations
+echo -e "${BLUE}[10/11] Running database migrations...${NC}"
+docker-compose exec -T php php bin/console doctrine:database:create --if-not-exists --no-interaction || true
+docker-compose exec -T php php bin/console doctrine:migrations:migrate --no-interaction || echo -e "${YELLOW}⚠ No pending migrations${NC}"
+echo -e "${GREEN}✓ Migrations executed${NC}"
+echo ""
+
+# Load fixtures (if they exist)
+echo -e "${BLUE}[11/11] Loading fixtures and building assets...${NC}"
+if docker-compose exec -T php test -d "src/DataFixtures" 2>/dev/null; then
+    echo "Loading fixtures..."
+    docker-compose exec -T php php bin/console doctrine:fixtures:load --no-interaction 2>/dev/null || echo -e "${YELLOW}⚠ No fixtures to load${NC}"
+    echo -e "${GREEN}✓ Fixtures loaded${NC}"
 else
-    echo -e "${YELLOW}⚠ No hay fixtures para cargar${NC}"
+    echo -e "${YELLOW}⚠ No fixtures directory found${NC}"
 fi
-echo ""
 
-# Configurar permisos
-echo "Configurando permisos..."
-chmod -R 777 var/
-echo -e "${GREEN}✓ Permisos configurados${NC}"
-echo ""
+# Clear cache
+echo "Clearing cache..."
+docker-compose exec -T php php bin/console cache:clear --no-warmup
+docker-compose exec -T php php bin/console cache:warmup
+echo -e "${GREEN}✓ Cache cleared${NC}"
 
-# Limpiar cache
-echo "Limpiando cache..."
-php bin/console cache:clear
-echo -e "${GREEN}✓ Cache limpiado${NC}"
-echo ""
-
-# Construir assets (si es necesario)
+# Build assets with Vite
 if [ -f "vite.config.js" ]; then
-    echo "Construyendo assets con Vite..."
-    npm run build || echo -e "${YELLOW}⚠ Error al construir assets (puede ejecutarse después con 'make build')${NC}"
-    echo -e "${GREEN}✓ Assets construidos${NC}"
-    echo ""
+    echo "Building assets with Vite..."
+    docker-compose exec -T php npm run build || echo -e "${YELLOW}⚠ Error building assets (you can run 'make build' later)${NC}"
+    echo -e "${GREEN}✓ Assets built${NC}"
 fi
+echo ""
 
-# Mostrar información de acceso
+# Show access information
 echo "=========================================="
-echo -e "${GREEN}  Setup completado exitosamente!${NC}"
+echo -e "${GREEN}  Setup completed successfully!${NC}"
 echo "=========================================="
 echo ""
-echo "Información de acceso:"
-echo "  - Aplicación Symfony: http://localhost:8000"
+echo "Access Information:"
+echo "  - Symfony Application: http://localhost:8000"
 echo "  - phpMyAdmin: http://localhost:8080"
-echo "  - MySQL: localhost:3306"
+echo "  - MySQL: localhost:3307 (host) / database:3306 (container)"
 echo ""
-echo "Credenciales MySQL:"
-echo "  - Usuario: app"
-echo "  - Contraseña: app"
-echo "  - Base de datos: app"
+echo "MySQL Credentials:"
+echo "  - User: app"
+echo "  - Password: app"
+echo "  - Database: app"
 echo ""
-echo "Comandos útiles:"
-echo "  - make up          : Levantar contenedores"
-echo "  - make down        : Detener contenedores"
-echo "  - make migrate     : Ejecutar migraciones"
-echo "  - make fixtures    : Cargar fixtures"
-echo "  - make test        : Ejecutar pruebas"
-echo "  - make dev         : Iniciar servidor Vite en desarrollo"
-echo "  - make build       : Construir assets para producción"
-echo "  - make logs        : Ver logs de Docker"
+echo "Useful commands:"
+echo "  - make up          : Start containers"
+echo "  - make down        : Stop containers"
+echo "  - make migrate     : Run migrations"
+echo "  - make fixtures    : Load fixtures"
+echo "  - make test        : Run tests"
+echo "  - make dev         : Start Vite dev server"
+echo "  - make build       : Build assets for production"
+echo "  - make logs        : View Docker logs"
+echo "  - make shell       : Open shell in PHP container"
 echo ""
-echo -e "${GREEN}¡Listo para desarrollar!${NC}"
+echo -e "${GREEN}Ready to develop!${NC}"
 

@@ -1,73 +1,73 @@
 .PHONY: help setup up down install migrate fixtures test clean build dev
 
-help: ## Mostrar esta ayuda
-	@echo "Comandos disponibles:"
+help: ## Show this help
+	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Ejecutar script de setup completo
+setup: ## Run complete setup script
 	@chmod +x setup.sh
 	@./setup.sh
 
-up: ## Levantar contenedores Docker
+up: ## Start Docker containers
 	@docker-compose up -d
-	@echo "Contenedores levantados. Esperando a que MySQL esté listo..."
+	@echo "Containers started. Waiting for MySQL to be ready..."
 	@sleep 5
 
-down: ## Detener contenedores Docker
+down: ## Stop and remove Docker containers
 	@docker-compose down
 
-stop: ## Detener contenedores sin eliminarlos
+stop: ## Stop containers without removing them
 	@docker-compose stop
 
-restart: ## Reiniciar contenedores
+restart: ## Restart containers
 	@docker-compose restart
 
-install: ## Instalar dependencias (composer + npm)
-	@echo "Instalando dependencias de Composer..."
-	@composer install
-	@echo "Instalando dependencias de npm..."
-	@npm install
+install: ## Install dependencies (composer + npm)
+	@echo "Installing Composer dependencies..."
+	@docker-compose exec php composer install
+	@echo "Installing npm dependencies..."
+	@docker-compose exec php npm install
 
-migrate: ## Ejecutar migraciones de Doctrine
-	@php bin/console doctrine:migrations:migrate --no-interaction
+migrate: ## Run Doctrine migrations
+	@docker-compose exec php php bin/console doctrine:migrations:migrate --no-interaction
 
-migrate-diff: ## Crear nueva migración
-	@php bin/console doctrine:migrations:diff
+migrate-diff: ## Create new migration
+	@docker-compose exec php php bin/console doctrine:migrations:diff
 
-fixtures: ## Cargar fixtures (si existen)
-	@if [ -f "src/DataFixtures" ]; then \
-		php bin/console doctrine:fixtures:load --no-interaction; \
+fixtures: ## Load fixtures (if any)
+	@if docker-compose exec php test -f "src/DataFixtures"; then \
+		docker-compose exec php php bin/console doctrine:fixtures:load --no-interaction; \
 	else \
-		echo "No hay fixtures configuradas aún"; \
+		echo "No fixtures configured yet"; \
 	fi
 
-test: ## Ejecutar pruebas unitarias
-	@php bin/phpunit
+test: ## Run unit tests
+	@docker-compose exec php php bin/phpunit
 
-test-coverage: ## Ejecutar pruebas con cobertura
-	@php bin/phpunit --coverage-html var/coverage
+test-coverage: ## Run tests with coverage
+	@docker-compose exec php php bin/phpunit --coverage-html var/coverage
 
-clean: ## Limpiar cache y logs
-	@php bin/console cache:clear
-	@rm -rf var/cache/*
-	@rm -rf var/log/*
+clean: ## Clear cache and logs
+	@docker-compose exec php php bin/console cache:clear
+	@docker-compose exec php rm -rf var/cache/*
+	@docker-compose exec php rm -rf var/log/*
 
-build: ## Construir assets con Vite
-	@npm run build
+build: ## Build assets with Vite
+	@docker-compose exec php npm run build
 
-dev: ## Iniciar servidor de desarrollo Vite
-	@npm run dev
+dev: ## Start Vite development server
+	@docker-compose exec php npm run dev
 
-logs: ## Ver logs de Docker
+logs: ## View Docker logs
 	@docker-compose logs -f
 
-shell: ## Abrir shell en contenedor PHP
+shell: ## Open shell in PHP container
 	@docker-compose exec php bash
 
-db-shell: ## Abrir shell de MySQL
+db-shell: ## Open MySQL shell
 	@docker-compose exec database mysql -u app -papp app
 
-reset: ## Resetear todo (detener, limpiar volúmenes, reinstalar)
+reset: ## Reset everything (stop, clean volumes, reinstall)
 	@docker-compose down -v
 	@make clean
 	@make up
