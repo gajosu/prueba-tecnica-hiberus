@@ -188,6 +188,32 @@ else
     echo -e "${YELLOW}⚠ No fixtures directory found${NC}"
 fi
 
+# Setup test database
+echo ""
+echo -e "${BLUE}Setting up test database...${NC}"
+docker-compose exec -T php php bin/console doctrine:database:create --env=test --if-not-exists --no-interaction
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Test database created${NC}"
+else
+    echo -e "${YELLOW}⚠ Test database already exists or failed to create${NC}"
+fi
+
+echo "Running test migrations..."
+docker-compose exec -T php php bin/console doctrine:migrations:migrate --env=test --no-interaction
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Test migrations executed${NC}"
+else
+    echo -e "${YELLOW}⚠ Test migrations failed or no pending migrations${NC}"
+fi
+
+echo "Loading test fixtures..."
+docker-compose exec -T php php bin/console doctrine:fixtures:load --env=test --no-interaction 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Test fixtures loaded${NC}"
+else
+    echo -e "${YELLOW}⚠ Test fixtures failed to load${NC}"
+fi
+
 # Clear cache
 echo "Clearing cache..."
 docker-compose exec -T php php bin/console cache:clear --no-warmup
@@ -227,15 +253,26 @@ echo "  - Password: app"
 echo "  - Database: app"
 echo ""
 echo "Useful commands:"
-echo "  - make up          : Start containers"
-echo "  - make down        : Stop containers"
-echo "  - make migrate     : Run migrations"
-echo "  - make fixtures    : Load fixtures"
-echo "  - make test        : Run tests"
-echo "  - make dev         : Start Vite dev server"
-echo "  - make build       : Build assets for production"
-echo "  - make logs        : View Docker logs"
-echo "  - make shell       : Open shell in PHP container"
+echo "  - make up             : Start containers"
+echo "  - make down           : Stop containers"
+echo "  - make migrate        : Run migrations"
+echo "  - make fixtures       : Load fixtures"
+echo "  - make test           : Run all tests"
+echo "  - make test-unit      : Run unit tests"
+echo "  - make test-feature   : Run feature tests"
+echo "  - make test-db-reset  : Reset test database"
+echo "  - make dev            : Start Vite dev server"
+echo "  - make build          : Build assets for production"
+echo "  - make logs           : View Docker logs"
+echo "  - make shell          : Open shell in PHP container"
+echo ""
+echo "Access:"
+echo "  - Application: http://localhost:${APP_PORT}"
+echo "  - API Docs:    http://localhost:${APP_PORT}/api/doc"
+echo ""
+echo "Test Credentials:"
+echo "  - Admin: admin@example.com / password"
+echo "  - User:  customer1@example.com / password"
 echo ""
 echo -e "${GREEN}Ready to develop!${NC}"
 
