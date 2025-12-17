@@ -33,9 +33,8 @@ final class CreateOrderHandler
                 throw new ProductNotFoundException($item['productId']);
             }
 
-            if (!$product->hasStock($item['quantity'])) {
-                throw new InsufficientStockException($product->name());
-            }
+            // Don't check or reduce stock at order creation
+            // Stock will be validated and reduced at checkout time
 
             $orderItem = new OrderItem(
                 $this->uuidGenerator->generate(),
@@ -47,10 +46,6 @@ final class CreateOrderHandler
             );
 
             $order->addItem($orderItem);
-
-            // Decrease product stock
-            $product->decreaseStock($item['quantity']);
-            $this->productRepository->save($product);
         }
 
         $this->orderRepository->save($order);

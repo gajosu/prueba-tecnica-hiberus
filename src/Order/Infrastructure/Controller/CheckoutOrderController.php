@@ -8,6 +8,7 @@ use App\Order\Application\CheckoutOrder\CheckoutOrderCommand;
 use App\Order\Application\CheckoutOrder\CheckoutOrderHandler;
 use App\Order\Domain\Exception\OrderNotFoundException;
 use App\Order\Infrastructure\Http\CheckoutOrderRequest;
+use App\Product\Domain\Exception\InsufficientStockException;
 use App\Shared\Infrastructure\Http\AbstractApiController;
 use App\Shared\Infrastructure\Security\Attribute\RequiresRole;
 use App\Shared\Infrastructure\Security\CurrentUser;
@@ -62,6 +63,7 @@ final class CheckoutOrderController extends AbstractApiController
             ]
         )
     )]
+    #[OA\Response(response: 400, description: 'Bad request (insufficient stock, payment failed, etc.)')]
     #[OA\Response(response: 401, description: 'Unauthorized')]
     #[OA\Response(response: 404, description: 'Order not found')]
     public function __invoke(string $id, Request $request): JsonResponse
@@ -87,10 +89,22 @@ final class CheckoutOrderController extends AbstractApiController
             return $this->successResponse($result);
         } catch (OrderNotFoundException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_NOT_FOUND);
+        } catch (InsufficientStockException $e) {
+            // Return 400 Bad Request for insufficient stock
+            return new JsonResponse([
+                'error' => $e->getMessage(),
+                'type' => 'insufficient_stock'
+            ], Response::HTTP_BAD_REQUEST);
         } catch (\InvalidArgumentException $e) {
-            return $this->errorResponse($e->getMessage());
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (\DomainException $e) {
+            // Domain exceptions (like payment failed)
+            return new JsonResponse([
+                'error' => $e->getMessage(),
+                'type' => 'domain_error'
+            ], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
-            return $this->errorResponse('Internal server error', Response::HTTP_INTERNAL_SERVER_ERROR);
+            throw $e;
         }
     }
 }

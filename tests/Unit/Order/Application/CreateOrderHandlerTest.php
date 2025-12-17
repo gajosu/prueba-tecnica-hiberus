@@ -22,7 +22,7 @@ final class CreateOrderHandlerTest extends UnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->orderRepository = $this->mockRepository(OrderRepository::class);
         $this->productRepository = $this->mockRepository(ProductRepository::class);
         $this->handler = new CreateOrderHandler(
@@ -48,7 +48,7 @@ final class CreateOrderHandlerTest extends UnitTestCase
             ->with($product->id())
             ->willReturn($product);
 
-        $this->productRepository->method('save');
+        // No longer saving product as stock is not reduced at order creation
         $this->orderRepository->expects($this->once())->method('save');
         $this->orderRepository->expects($this->once())->method('flush');
 
@@ -80,59 +80,6 @@ final class CreateOrderHandlerTest extends UnitTestCase
         ($this->handler)($command);
     }
 
-    public function test_it_throws_exception_when_insufficient_stock(): void
-    {
-        // Arrange
-        $product = ProductMother::withStock(5);
-        $command = new CreateOrderCommand(
-            customerId: 'customer-123',
-            items: [
-                ['productId' => $product->id(), 'quantity' => 10]
-            ]
-        );
-
-        $this->productRepository
-            ->method('findById')
-            ->willReturn($product);
-
-        // Assert
-        $this->expectException(InsufficientStockException::class);
-
-        // Act
-        ($this->handler)($command);
-    }
-
-    public function test_it_decreases_product_stock(): void
-    {
-        // Arrange
-        $product = ProductMother::withStock(10);
-        $initialStock = $product->stock();
-        $quantity = 3;
-
-        $command = new CreateOrderCommand(
-            customerId: 'customer-123',
-            items: [
-                ['productId' => $product->id(), 'quantity' => $quantity]
-            ]
-        );
-
-        $this->productRepository
-            ->method('findById')
-            ->willReturn($product);
-
-        $this->productRepository
-            ->expects($this->once())
-            ->method('save')
-            ->with($this->callback(function ($prod) use ($initialStock, $quantity) {
-                return $prod->stock() === ($initialStock - $quantity);
-            }));
-
-        $this->orderRepository->method('save');
-        $this->orderRepository->method('flush');
-
-        // Act
-        ($this->handler)($command);
-    }
 
     public function test_it_calculates_order_total_correctly(): void
     {
@@ -155,8 +102,6 @@ final class CreateOrderHandlerTest extends UnitTestCase
                 [$product2->id(), $product2]
             ]);
 
-        $this->productRepository->method('save');
-        
         $savedOrder = null;
         $this->orderRepository
             ->method('save')

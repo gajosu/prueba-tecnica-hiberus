@@ -8,20 +8,25 @@ use App\Order\Application\CheckoutOrder\CheckoutOrderCommand;
 use App\Order\Application\CheckoutOrder\CheckoutOrderHandler;
 use App\Order\Domain\Exception\OrderNotFoundException;
 use App\Order\Domain\Repository\OrderRepository;
+use App\Product\Domain\Exception\InsufficientStockException;
+use App\Product\Domain\Repository\ProductRepository;
 use App\Tests\Shared\Mother\OrderMother;
+use App\Tests\Shared\Mother\ProductMother;
 use App\Tests\Shared\UnitTestCase;
 
 final class CheckoutOrderHandlerTest extends UnitTestCase
 {
     private OrderRepository $orderRepository;
+    private ProductRepository $productRepository;
     private CheckoutOrderHandler $handler;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->orderRepository = $this->mockRepository(OrderRepository::class);
-        $this->handler = new CheckoutOrderHandler($this->orderRepository);
+        $this->productRepository = $this->mockRepository(ProductRepository::class);
+        $this->handler = new CheckoutOrderHandler($this->orderRepository, $this->productRepository);
     }
 
     public function test_it_marks_order_as_paid(): void
@@ -34,9 +39,23 @@ final class CheckoutOrderHandlerTest extends UnitTestCase
             paymentMethod: 'simulated'
         );
 
+        // Mock products with sufficient stock
+        $products = [];
+        foreach ($order->items() as $item) {
+            $product = ProductMother::create(
+                id: $item->productId(),
+                stock: $item->quantity() + 10 // Ensure sufficient stock
+            );
+            $products[$item->productId()] = $product;
+        }
+
         $this->orderRepository
             ->method('findByIdAndCustomer')
             ->willReturn($order);
+
+        $this->productRepository
+            ->method('findById')
+            ->willReturnCallback(fn($id) => $products[$id] ?? null);
 
         $this->orderRepository
             ->expects($this->once())
@@ -80,9 +99,23 @@ final class CheckoutOrderHandlerTest extends UnitTestCase
             paymentMethod: 'credit_card'
         );
 
+        // Mock products with sufficient stock
+        $products = [];
+        foreach ($order->items() as $item) {
+            $product = ProductMother::create(
+                id: $item->productId(),
+                stock: $item->quantity() + 10
+            );
+            $products[$item->productId()] = $product;
+        }
+
         $this->orderRepository
             ->method('findByIdAndCustomer')
             ->willReturn($order);
+
+        $this->productRepository
+            ->method('findById')
+            ->willReturnCallback(fn($id) => $products[$id] ?? null);
 
         $this->orderRepository->method('flush');
 
@@ -112,6 +145,82 @@ final class CheckoutOrderHandlerTest extends UnitTestCase
 
         // Act
         ($this->handler)($command);
+    }
+
+    public function test_it_throws_exception_when_insufficient_stock(): void
+    {
+        // Arrange
+        $order = OrderMother::withItems(2);
+        $command = new CheckoutOrderCommand(
+            orderId: $order->id(),
+            customerId: $order->customerId(),
+            paymentMethod: 'simulated'
+        );
+
+        // Mock products with insufficient stock
+        $products = [];
+        foreach ($order->items() as $item) {
+            $product = ProductMother::create(
+                id: $item->productId(),
+                stock: $item->quantity() - 1 // Insufficient stock
+            );
+            $products[$item->productId()] = $product;
+        }
+
+        $this->orderRepository
+            ->method('findByIdAndCustomer')
+            ->willReturn($order);
+
+        $this->productRepository
+            ->method('findById')
+            ->willReturnCallback(fn($id) => $products[$id] ?? null);
+
+        // Assert
+        $this->expectException(InsufficientStockException::class);
+
+        // Act
+        ($this->handler)($command);
+    }
+
+    public function test_it_reduces_stock_after_successful_payment(): void
+    {
+        // Arrange
+        $order = OrderMother::withItems(2);
+        $command = new CheckoutOrderCommand(
+            orderId: $order->id(),
+            customerId: $order->customerId(),
+            paymentMethod: 'simulated'
+        );
+
+        // Mock products with sufficient stock
+        $products = [];
+        foreach ($order->items() as $item) {
+            $product = ProductMother::create(
+                id: $item->productId(),
+                stock: 50
+            );
+            $products[$item->productId()] = $product;
+        }
+
+        $this->orderRepository
+            ->method('findByIdAndCustomer')
+            ->willReturn($order);
+
+        $this->productRepository
+            ->method('findById')
+            ->willReturnCallback(fn($id) => $products[$id] ?? null);
+
+        $this->orderRepository->method('flush');
+
+        // Act
+        ($this->handler)($command);
+
+        // Assert - Verify stock was reduced
+        foreach ($order->items() as $item) {
+            $product = $products[$item->productId()];
+            $expectedStock = 50 - $item->quantity();
+            $this->assertEquals($expectedStock, $product->stock());
+        }
     }
 }
 

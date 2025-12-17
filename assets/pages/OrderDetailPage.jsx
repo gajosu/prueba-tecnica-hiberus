@@ -41,7 +41,15 @@ export default function OrderDetailPage() {
         const errors = Object.values(err.response.data.errors).flat()
         setError(errors.join(', '))
       } else {
-        setError(err.response?.data?.message || err.response?.data?.error || 'Error al procesar el pago')
+        // Handle different error types
+        const errorData = err.response?.data
+        if (errorData?.type === 'insufficient_stock') {
+          setError(errorData.error || 'No hay suficiente stock disponible para completar el pedido')
+        } else if (errorData?.type === 'domain_error') {
+          setError(errorData.error || 'Error al procesar el pago')
+        } else {
+          setError(errorData?.message || errorData?.error || 'Error al procesar el pago')
+        }
       }
     } finally {
       setProcessing(false)

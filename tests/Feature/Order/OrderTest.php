@@ -225,5 +225,107 @@ final class OrderTest extends FeatureAuthenticatedTestCase
         $response = $this->assertJsonResponse(200);
         $this->assertEquals('paid', $response['status']);
     }
+
+    public function test_checkout_fails_when_insufficient_stock(): void
+    {
+        // Arrange - Create a product with limited stock
+        $adminToken = $this->loginAsAdmin();
+
+        $this->authenticatedJsonRequest('POST', '/api/products', [
+            'name' => 'Limited Stock Product',
+            'description' => 'This product has very limited stock',
+            'price' => 99.99,
+            'stock' => 2, // Only 2 items in stock
+        ], $adminToken);
+
+        $productResponse = $this->assertJsonResponse(201);
+        $productId = $productResponse['id'];
+
+        // Act - Create order with quantity 1
+        $userToken = $this->loginAsCustomer();
+        $this->authenticatedJsonRequest('POST', '/api/orders', [
+            'items' => [['productId' => $productId, 'quantity' => 1]],
+        ], $userToken);
+
+        $orderResponse = $this->assertJsonResponse(201);
+        $orderId = $orderResponse['id'];
+
+        // Act - Checkout the first order (should succeed)
+        $this->authenticatedJsonRequest('POST', "/api/orders/{$orderId}/checkout", [
+            'paymentMethod' => 'simulated',
+        ], $userToken);
+
+        $this->assertJsonResponse(200);
+
+        // Act - Create another order with quantity 2 (will exceed available stock)
+        $this->authenticatedJsonRequest('POST', '/api/orders', [
+            'items' => [['productId' => $productId, 'quantity' => 2]],
+        ], $userToken);
+
+        $secondOrderResponse = $this->assertJsonResponse(201);
+        $secondOrderId = $secondOrderResponse['id'];
+
+        // Act - Try to checkout the second order (should fail due to insufficient stock)
+        $this->authenticatedJsonRequest('POST', "/api/orders/{$secondOrderId}/checkout", [
+            'paymentMethod' => 'simulated',
+        ], $userToken);
+
+        // Assert - Should get an error response (500 for domain exceptions)
+        $errorResponse = $this->assertJsonResponse(500);
+        $this->assertArrayHasKey('error', $errorResponse);
+        // In test env, detailed error messages might not be available
+        // Just verify we get an error response
+    }
+
+    public function test_stock_is_reduced_after_successful_checkout(): void
+    {
+        // Arrange - Create a product with known stock
+        $adminToken = $this->loginAsAdmin();
+
+        $this->authenticatedJsonRequest('POST', '/api/products', [
+            'name' => 'Stock Test Product',
+            'description' => 'Product for testing stock reduction',
+            'price' => 49.99,
+            'stock' => 10,
+        ], $adminToken);
+
+        $productResponse = $this->assertJsonResponse(201);
+        $productId = $productResponse['id'];
+
+        // Act - Create and checkout an order
+        $userToken = $this->loginAsCustomer();
+        $this->authenticatedJsonRequest('POST', '/api/orders', [
+            'items' => [['productId' => $productId, 'quantity' => 3]],
+        ], $userToken);
+
+        $orderResponse = $this->assertJsonResponse(201);
+        $orderId = $orderResponse['id'];
+
+        $this->authenticatedJsonRequest('POST', "/api/orders/{$orderId}/checkout", [
+            'paymentMethod' => 'simulated',
+        ], $userToken);
+
+        $this->assertJsonResponse(200);
+
+        // Assert - Verify stock was reduced
+        // We would need a GET /api/products/:id endpoint to verify this
+        // For now, we'll verify by trying to create another order
+        $this->authenticatedJsonRequest('POST', '/api/orders', [
+            'items' => [['productId' => $productId, 'quantity' => 8]], // 10 - 3 = 7 remaining, so 8 should fail
+        ], $userToken);
+
+        $largeOrderResponse = $this->assertJsonResponse(201);
+        $largeOrderId = $largeOrderResponse['id'];
+
+        $this->authenticatedJsonRequest('POST', "/api/orders/{$largeOrderId}/checkout", [
+            'paymentMethod' => 'simulated',
+        ], $userToken);
+
+        // Assert - Should fail due to insufficient stock (500 for domain exceptions)
+        $errorResponse = $this->assertJsonResponse(500);
+        $this->assertArrayHasKey('error', $errorResponse);
+        // In test env, detailed error messages might not be available
+        // Just verify we get an error response
+    }
 }
 

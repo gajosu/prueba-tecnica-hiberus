@@ -158,5 +158,16 @@ class Product
     {
         return $this->stock >= $quantity;
     }
+
+    public function reduceStock(int $quantity): void
+    {
+        if (!$this->hasStock($quantity)) {
+            throw new \App\Product\Domain\Exception\InsufficientStockException(
+                "Insufficient stock for product {$this->name}. Available: {$this->stock}, Required: {$quantity}"
+            );
+        }
+        $this->stock -= $quantity;
+        $this->updatedAt = new DateTimeImmutable();
+    }
 }
 
