@@ -94,6 +94,9 @@ shell: ## Open shell in PHP container
 db-shell: ## Open PostgreSQL shell
 	@docker-compose exec database psql -U app -d app
 
+jwt-keys: ## Generate JWT keys
+	@docker-compose exec php php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
 reset: ## Reset everything (stop, clean volumes, reinstall)
 	@docker-compose down -v
 	@make clean
@@ -101,4 +104,5 @@ reset: ## Reset everything (stop, clean volumes, reinstall)
 	@sleep 10
 	@make install
 	@make migrate
+	@make jwt-keys
 

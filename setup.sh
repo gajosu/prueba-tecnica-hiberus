@@ -214,6 +214,11 @@ else
     echo -e "${YELLOW}⚠ Test fixtures failed to load${NC}"
 fi
 
+# Generate JWT keys
+echo "Generating JWT keys..."
+docker-compose exec -T php php bin/console lexik:jwt:generate-keypair --skip-if-exists 2>/dev/null || echo -e "${YELLOW}⚠ JWT keys already exist or failed to generate${NC}"
+echo -e "${GREEN}✓ JWT keys ready${NC}"
+
 # Clear cache
 echo "Clearing cache..."
 docker-compose exec -T php php bin/console cache:clear --no-warmup
