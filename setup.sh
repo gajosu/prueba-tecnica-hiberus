@@ -42,13 +42,23 @@ echo -e "${GREEN}✓ Docker is running${NC}"
 echo ""
 
 # Stop and clean existing containers
-echo -e "${BLUE}[2/11] Cleaning existing containers...${NC}"
+echo -e "${BLUE}[2/12] Cleaning existing containers...${NC}"
 docker-compose down -v 2>/dev/null || true
 echo -e "${GREEN}✓ Cleaned existing containers${NC}"
 echo ""
 
+# Build Docker images
+echo -e "${BLUE}[3/12] Building Docker images...${NC}"
+docker-compose build --no-cache
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to build Docker images${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Docker images built${NC}"
+echo ""
+
 # Create .env file if it doesn't exist
-echo -e "${BLUE}[3/11] Configuring environment...${NC}"
+echo -e "${BLUE}[4/12] Configuring environment...${NC}"
 if [ ! -f ".env" ]; then
     echo "Creating .env file..."
     cat > .env << 'EOF'
@@ -73,31 +83,46 @@ echo -e "${GREEN}✓ Environment configured${NC}"
 echo ""
 
 # Create necessary directories
-echo -e "${BLUE}[4/11] Creating directories...${NC}"
+echo -e "${BLUE}[5/12] Creating directories...${NC}"
 mkdir -p var/cache var/log var/coverage
 echo -e "${GREEN}✓ Directories created${NC}"
 echo ""
 
 # Install Composer dependencies using Docker
-echo -e "${BLUE}[5/11] Installing PHP dependencies with Composer...${NC}"
+echo -e "${BLUE}[6/12] Installing PHP dependencies with Composer...${NC}"
 if [ ! -f "composer.json" ]; then
     echo -e "${RED}Error: composer.json not found${NC}"
     exit 1
 fi
 
 docker run --rm -v $(pwd):/app -w /app composer:latest install --ignore-platform-reqs --no-interaction --prefer-dist
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to install Composer dependencies${NC}"
+    exit 1
+fi
 echo -e "${GREEN}✓ Composer dependencies installed${NC}"
 echo ""
 
 # Start database first
-echo -e "${BLUE}[6/11] Starting database...${NC}"
+echo -e "${BLUE}[7/12] Starting database...${NC}"
 docker-compose up -d database
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to start database${NC}"
+    exit 1
+fi
 echo "Waiting for PostgreSQL to be ready..."
 sleep 10
 
 # Wait for PostgreSQL to be ready
+MAX_RETRIES=30
+RETRY_COUNT=0
 until docker-compose exec -T database pg_isready -U app -d app 2>/dev/null; do
-    echo "Waiting for PostgreSQL..."
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        echo -e "${RED}Error: PostgreSQL failed to start after ${MAX_RETRIES} attempts${NC}"
+        exit 1
+    fi
+    echo "Waiting for PostgreSQL... (attempt $RETRY_COUNT/$MAX_RETRIES)"
     sleep 2
 done
 
@@ -105,14 +130,18 @@ echo -e "${GREEN}✓ PostgreSQL is ready${NC}"
 echo ""
 
 # Start all containers
-echo -e "${BLUE}[7/11] Starting all containers...${NC}"
+echo -e "${BLUE}[8/12] Starting all containers...${NC}"
 docker-compose up -d
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to start containers${NC}"
+    exit 1
+fi
 sleep 5
 echo -e "${GREEN}✓ All containers started${NC}"
 echo ""
 
 # Install npm dependencies
-echo -e "${BLUE}[8/11] Installing npm dependencies...${NC}"
+echo -e "${BLUE}[9/12] Installing npm dependencies...${NC}"
 if [ ! -f "package.json" ]; then
     echo -e "${YELLOW}⚠ package.json not found, creating a basic one...${NC}"
     docker-compose exec -T php npm init -y
@@ -121,24 +150,36 @@ if [ ! -f "package.json" ]; then
 fi
 
 docker-compose exec -T php npm install
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to install npm dependencies${NC}"
+    exit 1
+fi
 echo -e "${GREEN}✓ npm dependencies installed${NC}"
 echo ""
 
 # Set permissions
-echo -e "${BLUE}[9/11] Setting permissions...${NC}"
+echo -e "${BLUE}[10/12] Setting permissions...${NC}"
 docker-compose exec -T php chmod -R 777 var/ 2>/dev/null || sudo chmod -R 777 var/
 echo -e "${GREEN}✓ Permissions configured${NC}"
 echo ""
 
 # Run migrations
-echo -e "${BLUE}[10/11] Running database migrations...${NC}"
-docker-compose exec -T php php bin/console doctrine:database:create --if-not-exists --no-interaction || true
-docker-compose exec -T php php bin/console doctrine:migrations:migrate --no-interaction || echo -e "${YELLOW}⚠ No pending migrations${NC}"
+echo -e "${BLUE}[11/12] Running database migrations...${NC}"
+docker-compose exec -T php php bin/console doctrine:database:create --if-not-exists --no-interaction
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to create database${NC}"
+    exit 1
+fi
+
+docker-compose exec -T php php bin/console doctrine:migrations:migrate --no-interaction
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}⚠ No pending migrations or migration failed${NC}"
+fi
 echo -e "${GREEN}✓ Migrations executed${NC}"
 echo ""
 
-# Load fixtures (if they exist)
-echo -e "${BLUE}[11/11] Loading fixtures and building assets...${NC}"
+# Load fixtures and build assets
+echo -e "${BLUE}[12/12] Loading fixtures and building assets...${NC}"
 if docker-compose exec -T php test -d "src/DataFixtures" 2>/dev/null; then
     echo "Loading fixtures..."
     docker-compose exec -T php php bin/console doctrine:fixtures:load --no-interaction 2>/dev/null || echo -e "${YELLOW}⚠ No fixtures to load${NC}"
@@ -150,14 +191,22 @@ fi
 # Clear cache
 echo "Clearing cache..."
 docker-compose exec -T php php bin/console cache:clear --no-warmup
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to clear cache${NC}"
+    exit 1
+fi
 docker-compose exec -T php php bin/console cache:warmup
 echo -e "${GREEN}✓ Cache cleared${NC}"
 
 # Build assets with Vite
 if [ -f "vite.config.js" ]; then
     echo "Building assets with Vite..."
-    docker-compose exec -T php npm run build || echo -e "${YELLOW}⚠ Error building assets (you can run 'make build' later)${NC}"
-    echo -e "${GREEN}✓ Assets built${NC}"
+    docker-compose exec -T php npm run build
+    if [ $? -ne 0 ]; then
+        echo -e "${YELLOW}⚠ Error building assets (you can run 'make build' later)${NC}"
+    else
+        echo -e "${GREEN}✓ Assets built${NC}"
+    fi
 fi
 echo ""
 
