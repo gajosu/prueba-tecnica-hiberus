@@ -68,6 +68,15 @@ DATABASE_URL="postgresql://app:app@database:5432/app?serverVersion=16&charset=ut
 EOF
 fi
 
+# Create .env.test.local for local testing with Docker
+if [ ! -f ".env.test.local" ]; then
+    echo "Creating .env.test.local file for local testing..."
+    cat > .env.test.local << 'EOF'
+# Configuration for local testing with Docker
+DATABASE_URL=postgresql://app:app@database:5432/app_test?serverVersion=16&charset=utf8
+EOF
+fi
+
 # Generate APP_SECRET if not exists or empty
 if ! grep -q "APP_SECRET=" .env || grep -q "APP_SECRET=$" .env || grep -q "APP_SECRET=\"\"" .env; then
     echo "Generating APP_SECRET..."

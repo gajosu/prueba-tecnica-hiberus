@@ -16,7 +16,9 @@
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
         <env name="KERNEL_CLASS" value="App\Kernel" />
-        <server name="DATABASE_URL" value="postgresql://app:app@database:5432/app_test?serverVersion=16&amp;charset=utf8" />
+        <!-- DATABASE_URL is defined via environment variables -->
+        <!-- For local Docker: DATABASE_URL=postgresql://app:app@database:5432/app_test?serverVersion=16&charset=utf8 -->
+        <!-- For CI: DATABASE_URL=postgresql://app:app@127.0.0.1:5432/app_test?serverVersion=15&charset=utf8 -->
     </php>
 
     <testsuites>
