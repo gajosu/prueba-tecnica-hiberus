@@ -10,7 +10,7 @@ setup: ## Run complete setup script
 
 up: ## Start Docker containers
 	@docker-compose up -d
-	@echo "Containers started. Waiting for MySQL to be ready..."
+	@echo "Containers started. Waiting for PostgreSQL to be ready..."
 	@sleep 5
 
 down: ## Stop and remove Docker containers
